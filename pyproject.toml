@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "src_rest"
+version = "0.1.0"
+description = "Moscow restoraunts"
+authors = ["Ismail Gadzhiev <ismailgadzhievff@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+black = "^22.6.0"
+mypy = "^0.971"
+pandas = "^1.4.3"
+pytest = "^7.1.2"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
