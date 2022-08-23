@@ -5,14 +5,20 @@ description = "Moscow restoraunts"
 authors = ["Ismail Gadzhiev <ismailgadzhievff@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.8"
+python = ">=3.8,<4"
 black = "^22.6.0"
 mypy = "^0.971"
 pandas = "^1.4.3"
 pytest = "^7.1.2"
+requests = "^2.28.1"
+types-requests = "^2.28.9"
+requests-mock = "^1.9.3"
 
 [tool.poetry.dev-dependencies]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+ignore_missing_imports = true
