@@ -28,6 +28,9 @@ import requests_mock
 import json
 from src_rest.api.mosapi import MosApi
 
+TEST_CONF_API = {
+    'n_retries': 1,
+}
 
 class TestMosApi:
     @pytest.fixture(autouse=True)
@@ -50,19 +53,19 @@ class TestMosApi:
             assert data.status_code == 403, "Mocker failed"
             assert data.text == "testMocking1", "Mocker failed, wrong text"
 
-            api = MosApi("1223")
+            api = MosApi("1223", **TEST_CONF_API)
             with pytest.raises(ValueError):
                 api.get("object", "96", 30, 40)
             try:
                 api.get("object", "96", 30, 40)
             except ValueError as e:
                 assert "testMocking1" in str(e)
-        api = MosApi("1233")
+        api = MosApi("1233", **TEST_CONF_API)
         with pytest.raises(ValueError):
             api.get("object", "96", 30, 40)
 
     def test_api_get_data(self):
-        api = MosApi("123")
+        api = MosApi("123", **TEST_CONF_API)
         with requests_mock.Mocker() as m:
             m.get(
                 "https://apidata.mos.ru/v1/object/96/rows?$skip=3&$top=4&api_key=123",
@@ -77,6 +80,9 @@ class TestMosApi:
 from typing import Union, Dict, Any
 from src_rest.api.mosapi import MosDataset
 
+TEST_CONF_DATASET = {
+    'sleep': 0
+}
 
 class MosApiMocker:
     def __init__(
@@ -108,14 +114,14 @@ class TestMosDataset:
         self.api = MosApiMocker('123')
 
     def test_no_object(self):
-        ds = MosDataset(self.api, '34',)
+        ds = MosDataset(self.api, '34', **TEST_CONF_DATASET)
         items = []
         with pytest.raises(ValueError):
             for item in ds.load():
                 items.extend(item)
 
     def test_load_data(self):
-        ds = MosDataset(self.api, '0',)
+        ds = MosDataset(self.api, '0', **TEST_CONF_DATASET)
         data = []
         for item in ds.load():
             data.extend(item)
@@ -123,7 +129,7 @@ class TestMosDataset:
         assert len(data) == len(self.api.data['0'])
         assert str(data) == str(self.api.data["0"])
 
-        ds = MosDataset(self.api, '1',)
+        ds = MosDataset(self.api, '1', **TEST_CONF_DATASET)
         data = []
         for item in ds.load():
             data.extend(item)

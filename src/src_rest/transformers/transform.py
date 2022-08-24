@@ -12,6 +12,9 @@ from typing import Any, List
 @click.option('--output', help='desitnation file to save data', required=True, type=click.STRING)
 def concat_data(input: str, is_list: bool, output: str) -> None:
 
+    if not os.path.exists(input):
+        raise ValueError(f'Input path {os.path.abspath(input)} not found')
+
     data: List[Any] = []
     for filename in glob.glob(os.path.join(input, '*.json')):
         with open(filename, 'r', encoding='utf-8') as file:

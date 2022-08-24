@@ -1,4 +1,3 @@
-from unittest import result
 import pytest
 import json
 import os
@@ -31,6 +30,8 @@ class TestConcatData:
         for i in range(10):
             with open(f"./test_data/data2/file{i}.json", "w", encoding="utf-8") as file:
                 json.dump(self.data2, file)
+        
+        safe_mkdir('./test_data/data3')
 
         yield
 
@@ -59,7 +60,13 @@ class TestConcatData:
 
         result = runner.invoke(
             concat_data,
-            ["--input", "./test_data/data2", "--output", "./test_data/data2.json", '--is_list'],
+            [
+                "--input",
+                "./test_data/data2",
+                "--output",
+                "./test_data/data2.json",
+                "--is_list",
+            ],
         )
 
         assert result.exit_code == 0
@@ -69,3 +76,42 @@ class TestConcatData:
 
         assert len(data) == 10 * 3
         assert data[3] == 1
+
+    def test_unexisting_path(self):
+        runner = CliRunner()
+
+        result = runner.invoke(
+            concat_data,
+            [
+                "--input",
+                "/path/that/doesnt/even/exist",
+                "--output",
+                "./somefile.json",
+                "--is_list",
+            ],
+        )
+
+        assert isinstance(result.exception, ValueError)
+
+        assert "/path/that/doesnt/even/exist" in str(result.exception)
+
+    def test_empty_dir(self):
+        runner = CliRunner()
+
+        result = runner.invoke(
+            concat_data,
+            [
+                "--input",
+                "./test_data/data3",
+                "--output",
+                "./test_data/data3.json",
+                "--is_list",
+            ],
+        )
+
+        assert result.exit_code == 0
+
+        with open("./test_data/data3.json", "r", encoding="utf-8") as file:
+            data = json.load(file)
+        
+        assert len(data) == 0
