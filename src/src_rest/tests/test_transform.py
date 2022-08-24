@@ -94,6 +94,42 @@ class TestConcatData:
         assert isinstance(result.exception, ValueError)
 
         assert "/path/that/doesnt/even/exist" in str(result.exception)
+    
+    def test_unexisting_parent_output_path(self):
+
+        runner = CliRunner()
+
+        result = runner.invoke(
+            concat_data,
+            [
+                "--input",
+                "./test_data/data3",
+                "--output",
+                "./test_data/some/folder/data4.json",
+                "--is_list",
+            ],
+        )
+
+        assert result.exit_code != 0
+        assert isinstance(result.exception, ValueError)
+
+    def test_unexisting_output_path(self):
+
+        runner = CliRunner()
+
+        result = runner.invoke(
+            concat_data,
+            [
+                "--input",
+                "./test_data/data3",
+                "--output",
+                "./test_data/some/data4.json",
+                "--is_list",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert os.path.exists("./test_data/some/data4.json")
 
     def test_empty_dir(self):
         runner = CliRunner()
