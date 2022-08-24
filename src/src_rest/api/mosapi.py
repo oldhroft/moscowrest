@@ -26,7 +26,7 @@ class MosApi:
             backoff_factor=self.backoff,
             status_forcelist=[500, 502, 503, 504],
         )
-        session.mount("http://", HTTPAdapter(max_retries=retries))
+        session.mount("https://", HTTPAdapter(max_retries=retries))
         self.session = session
 
     def get_response_text(self, response: Response) -> str:
@@ -63,22 +63,26 @@ class MosApi:
         text = self.get_response_text(response)
         return int(text)
 
+import time
 
 class MosDataset:
 
     def __init__(
-        self, api: MosApi, dataset_id: Union[str, int], step: int = 1000
+        self, api: MosApi, dataset_id: Union[str, int], step: int = 1000,
+        sleep: int=3,
     ) -> None:
 
         self.api = api
         self.step = step
         self.dataset_id = dataset_id
         self.object_type = "datasets"
+        self.sleep = sleep
 
     def load(self):
         full_count = self.api.count(self.object_type, self.dataset_id)
         i = 0
         while True:
+            time.sleep(self.sleep)
             print(f"Request {i}: {(i + 1) * self.step} / {full_count}")
             result = self.api.get(
                 object_type=self.object_type,
