@@ -1,0 +1,17 @@
+DATASET_IDS = ["3304"]
+
+rule process_target:
+    input:
+        expand("data/stg/mosdata_dataset{dataset_id}.csv", 
+               dataset_id=DATASET_IDS)
+
+rule process_data:
+    input: "data/stg/mosdata_dataset{dataset_id}.json"
+    output: "data/stg/mosdata_dataset{dataset_id}.csv"
+    shell: "process_mosdata --input {input} --output {output}"
+
+rule concat_data:
+    input: "data/raw/mosdata_dataset{dataset_id}"
+    output: "data/stg/mosdata_dataset{dataset_id}.json"
+    shell: "concat_data --input {input} --output {output} --is_list"
+
