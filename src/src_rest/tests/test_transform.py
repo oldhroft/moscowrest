@@ -30,8 +30,8 @@ class TestConcatData:
         for i in range(10):
             with open(f"./test_data/data2/file{i}.json", "w", encoding="utf-8") as file:
                 json.dump(self.data2, file)
-        
-        safe_mkdir('./test_data/data3')
+
+        safe_mkdir("./test_data/data3")
 
         yield
 
@@ -91,10 +91,10 @@ class TestConcatData:
             ],
         )
 
-        assert isinstance(result.exception, ValueError)
+        assert isinstance(result.exception, FileNotFoundError)
 
         assert "/path/that/doesnt/even/exist" in str(result.exception)
-    
+
     def test_unexisting_parent_output_path(self):
 
         runner = CliRunner()
@@ -111,7 +111,7 @@ class TestConcatData:
         )
 
         assert result.exit_code != 0
-        assert isinstance(result.exception, ValueError)
+        assert isinstance(result.exception, FileNotFoundError)
 
     def test_unexisting_output_path(self):
 
@@ -149,5 +149,64 @@ class TestConcatData:
 
         with open("./test_data/data3.json", "r", encoding="utf-8") as file:
             data = json.load(file)
-        
+
         assert len(data) == 0
+
+from pandas import read_csv
+from ast import literal_eval
+from src_rest.transformers.transform_mosdata import *
+
+
+class TestTransformMosdata:
+    @pytest.fixture(autouse=True)
+    def init_data(self):
+        self.record = {
+            "Number": 0,
+            "global_id": "12233",
+            "Cells": {
+                "a": 1,
+                "b": 2,
+                "geoData": {"coordinates": [0, 1]},
+                "PublicPhone": [{"PublicPhone": "1"}, {"PrivatePhone": "2"}],
+            },
+        }
+
+        safe_mkdir("./test_record")
+        with open("./test_record/data.json", "w", encoding="utf-8") as file:
+            json.dump([self.record], file)
+
+        yield
+
+        os.system("rm -rf ./test_record")
+
+    def test_process_record(self):
+
+        result = process_record(self.record)
+
+        assert result["Number"] == 0
+        assert result["x_coord"] == 0
+        assert result["y_coord"] == 1
+        assert isinstance(result["PublicPhone"], list)
+        assert result["PublicPhone"][1] == "2"
+
+    def test_process_mosdata(self):
+
+        runner = CliRunner()
+
+        runner.invoke(
+            process_mosdata,
+            [
+                "--input",
+                "./test_record/data.json",
+                "--output",
+                "./test_record/output.csv",
+            ],
+        )
+
+        assert os.path.exists('./test_record/output.csv')
+        df = read_csv('./test_record/output.csv')
+
+        assert df.shape[0] == 1
+        assert df['Number'][0] == 0
+        assert df['x_coord'][0] == 0
+        assert df['PublicPhone'].apply(literal_eval)[0][1]== '2'

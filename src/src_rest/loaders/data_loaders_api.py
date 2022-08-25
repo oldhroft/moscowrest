@@ -2,8 +2,10 @@ import click
 import json
 import os
 
+from typing import Union
+
 from src_rest.api.mosapi import MosApi, MosDataset
-from src_rest.loaders.utils import safe_mkdir
+from src_rest.loaders.utils import check_paths
 
 
 @click.command()
@@ -23,6 +25,7 @@ from src_rest.loaders.utils import safe_mkdir
 )
 @click.option("--sleep", default=3, help="Sleep between attempts", type=click.INT)
 @click.option("--step", default=1000, help="Step size", type=click.INT)
+@click.option("--limit", default=None, help="limit requests number", type=click.INT)
 def load_mosdata(
     dataset_id: str,
     output: str,
@@ -31,12 +34,16 @@ def load_mosdata(
     backoff: int,
     sleep: int,
     step: int,
+    limit: Union[int, None],
 ) -> None:
     api = MosApi(api_key, n_retries=n_retries, backoff=backoff)
     ds = MosDataset(api, dataset_id, sleep=sleep, step=step)
-    safe_mkdir(output)
+    check_paths(input=None, output=output)
     for i, chunk in enumerate(ds.load()):
         print(f"Processing chunk {i}")
         chunk_name = os.path.join(output, f"chunk_{i}.json")
         with open(chunk_name, "w", encoding="utf-8") as file:
             json.dump(chunk, file)
+
+        if limit is not None and i + 1 == limit:
+            break
