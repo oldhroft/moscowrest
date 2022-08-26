@@ -162,5 +162,7 @@ cython_debug/
 *.json
 *.csv
 *.tsv
+*.txt
 
 *.snakemake
+*trigger
