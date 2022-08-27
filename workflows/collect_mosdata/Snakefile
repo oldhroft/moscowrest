@@ -1,4 +1,4 @@
-DATASET_IDS = ["3304"]
+DATASET_IDS = ["1903"]
 
 with open('TOKEN_MOS.txt', 'r', encoding='utf-8') as file:
     TOKEN_MOS = file.read()
@@ -16,9 +16,13 @@ rule process_data:
 rule concat_data:
     input: "data/raw/mosdata_dataset{dataset_id}/CHECKPOINT"
     output: "data/stg/mosdata_dataset{dataset_id}.json"
-    shell: "concat_data --input {input} --output {output} --is_list"
+    params:
+        inputdir = "data/raw/mosdata_dataset{dataset_id}"
+    shell: "concat_data --input {params.inputdir} --output {output} --is_list"
 
 rule download_data:
     input: "data/raw/mosdata_dataset_trigger"
     output: "data/raw/mosdata_dataset{dataset_id}/CHECKPOINT"
-    shell: "load_mosdata --dataset_id {{wildcard.dataset_id}} --api_key %s --step 200 --output {output} --limit 4 && touch data/raw/mosdata_dataset{{wildcard.dataset_id}}/CHECKPOINT" % TOKEN_MOS
+    params: 
+        outdir = "data/raw/mosdata_dataset{dataset_id}"
+    shell: "load_mosdata --dataset_id {wildcards.dataset_id} --api_key %s --step 200 --output {params.outdir} && touch data/raw/mosdata_dataset{wildcards.dataset_id}/CHECKPOINT" % TOKEN_MOS

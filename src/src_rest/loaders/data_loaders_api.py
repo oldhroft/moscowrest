@@ -38,7 +38,7 @@ def load_mosdata(
 ) -> None:
     api = MosApi(api_key, n_retries=n_retries, backoff=backoff)
     ds = MosDataset(api, dataset_id, sleep=sleep, step=step)
-    check_paths(input=None, output=output)
+    check_paths(input=None, output=output, is_output_dir=True)
     for i, chunk in enumerate(ds.load()):
         print(f"Processing chunk {i}")
         chunk_name = os.path.join(output, f"chunk_{i}.json")
