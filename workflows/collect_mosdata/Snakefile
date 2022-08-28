@@ -5,8 +5,14 @@ with open('TOKEN_MOS.txt', 'r', encoding='utf-8') as file:
 
 rule process_target:
     input:
-        expand("data/stg/mosdata_dataset{dataset_id}.csv", 
+        expand("data/pa/mosdata_dataset{dataset_id}.csv", 
                dataset_id=DATASET_IDS)
+
+rule create_dm:
+    input: "data/stg/mosdata_dataset{dataset_id}.csv"
+    output: "data/pa/mosdata_dataset{dataset_id}.csv"
+    shell: "mosdata_datamart --input {input} --output {output}"
+        
 
 rule process_data:
     input: "data/stg/mosdata_dataset{dataset_id}.json"

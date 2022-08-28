@@ -152,6 +152,7 @@ class TestConcatData:
 
         assert len(data) == 0
 
+
 from pandas import read_csv
 from ast import literal_eval
 from src_rest.transformers.transform_mosdata import *
@@ -203,10 +204,124 @@ class TestTransformMosdata:
             ],
         )
 
-        assert os.path.exists('./test_record/output.csv')
-        df = read_csv('./test_record/output.csv')
+        assert os.path.exists("./test_record/output.csv")
+        df = read_csv("./test_record/output.csv")
 
         assert df.shape[0] == 1
-        assert df['Number'][0] == 0
-        assert df['x_coord'][0] == 0
-        assert df['PublicPhone'].apply(literal_eval)[0][1]== '2'
+        assert df["Number"][0] == 0
+        assert df["x_coord"][0] == 0
+        assert df["PublicPhone"].apply(literal_eval)[0][1] == "2"
+
+
+from src_rest.transformers.utils import *
+
+
+class TestUtils:
+    def test_extract_attribues(self):
+
+        string = "Улица пушкина, дом колотушкина, корпус пичужкина"
+        items = string.lower().split(",")
+
+        street_info = extract_patterns(items, STREET_PATTERNS)
+        assert street_info["Type"] == "улица"
+        assert street_info["Name"] == "пушкина"
+
+        house_info = extract_patterns(items, HOUSE_PATTERNS)
+        assert house_info["Type"] == "дом"
+        assert house_info["Name"] == "колотушкина"
+
+        building_type = extract_patterns(items, BUIDING_PATTERNS)
+        assert building_type["Type"] == "корпус"
+        assert building_type["Name"] == "пичужкина"
+
+    def test_extract_attributes_with_none(self):
+        string = "переулок пушкина, стр пичужкина"
+        items = string.lower().split(",")
+
+        street_info = extract_patterns(items, STREET_PATTERNS)
+        assert street_info["Type"] == "переулок"
+        assert street_info["Name"] == "пушкина"
+
+        house_info = extract_patterns(items, HOUSE_PATTERNS)
+        assert house_info["Type"] is None
+        assert house_info["Name"] is None
+
+        building_type = extract_patterns(items, BUIDING_PATTERNS)
+        assert building_type["Type"] == "строение"
+        assert building_type["Name"] == "пичужкина"
+
+    def test_extract_attributes_false_positives(self):
+        string = "караул пушкина, выпад 7, атас пичужкина"
+        items = string.lower().split(",")
+
+        street_info = extract_patterns(items, STREET_PATTERNS)
+        assert street_info["Type"] is None
+        assert street_info["Name"] is None
+
+        house_info = extract_patterns(items, HOUSE_PATTERNS)
+        assert house_info["Type"] is None
+        assert house_info["Name"] is None
+
+        building_type = extract_patterns(items, BUIDING_PATTERNS)
+        assert building_type["Type"] is None
+        assert building_type["Name"] is None
+
+    def test_extract_attributes_short(self):
+        string = "ул пушкина, д 7, с пичужкина"
+        items = string.lower().split(",")
+
+        street_info = extract_patterns(items, STREET_PATTERNS)
+        assert street_info["Type"] == "улица"
+        assert street_info["Name"] == "пушкина"
+
+        house_info = extract_patterns(items, HOUSE_PATTERNS)
+        assert house_info["Type"] == "дом"
+        assert house_info["Name"] == "7"
+
+        building_type = extract_patterns(items, BUIDING_PATTERNS)
+        assert building_type["Type"] == "строение"
+        assert building_type["Name"] == "пичужкина"
+
+
+from pandas import NA, read_csv, isna
+from src_rest.transformers.transform_mosdata import create_mosdata_datamart
+
+
+class TestMosdataDatamart:
+    @pytest.fixture(autouse=True)
+    def init_data(self):
+        self.path = "./src/src_rest/tests/data/sample_data.csv"
+        self.data = read_csv(self.path)
+        safe_mkdir("./dm")
+        yield
+        os.system("rm -rf ./dm")
+
+    def test_create_mosdata_datamart(self):
+        df = create_mosdata_datamart(self.data)
+        assert df.shape[0] == 2
+
+        assert isna(df.PublicPhone.iloc[0])
+        assert df.Name_norm.iloc[0] == 'чебуречная'
+        assert df.StreetType.iloc[1] == 'бульвар'
+        assert df.StreetName.iloc[1] == 'сиреневый'
+        assert df.HouseType.iloc[1] == "дом"
+        assert df.HouseName.iloc[1] == "15а"
+
+    def test_mosdata_datamart(self):
+        runner = CliRunner()
+
+        result = runner.invoke(
+            mosdata_datamart,
+            ["--input", "./src/src_rest/tests/data/sample_data.csv", "--output", "./dm/data.csv"],
+        )
+
+        assert result.exit_code == 0
+        assert os.path.exists("./dm/data.csv")
+
+        df = read_csv("./dm/data.csv")
+        assert isna(df.PublicPhone.iloc[0])
+        assert df.Name_norm.iloc[0] == 'чебуречная'
+        assert df.StreetType.iloc[1] == 'бульвар'
+        assert df.StreetName.iloc[1] == 'сиреневый'
+        assert df.HouseType.iloc[1] == "дом"
+        assert df.HouseName.iloc[1] == "15а"
