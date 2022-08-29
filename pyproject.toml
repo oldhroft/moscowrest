@@ -20,6 +20,7 @@ snakemake = "^7.13.0"
 [tool.poetry.dev-dependencies]
 jupyter = "^1.0.0"
 matplotlib = "^3.5.3"
+natasha = "^1.4.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -32,6 +33,7 @@ ignore_missing_imports = true
 load_mosdata = "src_rest.loaders.data_loaders_api:load_mosdata"
 concat_data = "src_rest.transformers.transform:concat_data"
 process_mosdata = "src_rest.transformers.transform_mosdata:process_mosdata"
+mosdata_datamart = "src_rest.transformers.transform_mosdata:mosdata_datamart"
 
 [tool.pytest.ini_options]
 addopts = "--cov-report xml:coverage-reports/coverage.xml --cov-report=term-missing --cov=src_rest --cov-report=html"
