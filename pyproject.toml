@@ -35,6 +35,7 @@ load_mosdata = "src_rest.loaders.data_loaders_api:load_mosdata"
 concat_data = "src_rest.transformers.transform:concat_data"
 process_mosdata = "src_rest.transformers.transform_mosdata:process_mosdata"
 mosdata_datamart = "src_rest.transformers.transform_mosdata:mosdata_datamart"
+load_moscow_restaurants = "src_rest.loaders.data_loaders_scrapy:load_moscow_restaurants"
 
 [tool.pytest.ini_options]
 addopts = "--cov-report xml:coverage-reports/coverage.xml --cov-report=term-missing --cov=src_rest --cov-report=html"

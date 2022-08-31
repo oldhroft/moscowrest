@@ -1,12 +1,12 @@
 import os
-
+from typing import Optional
 
 def safe_mkdir(path: str) -> None:
     if not os.path.exists(path):
         os.mkdir(path)
 
 
-def check_paths(input: str, output: str, is_output_dir: bool=False) -> None:
+def check_paths(input: Optional[str], output: str, is_output_dir: bool=False) -> None:
     if input is not None and not os.path.exists(input):
         raise FileNotFoundError(f"Input path {os.path.abspath(input)} not found")
 

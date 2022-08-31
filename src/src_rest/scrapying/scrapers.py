@@ -22,6 +22,7 @@ class BaseCrawler(metaclass=ABCMeta):
         n_retries: int = 10,
         backoff: int = 1,
         timeout: int = 10,
+        limit: Optional[int] = None,
     ) -> None:
         self.link = link
         self.headers: Dict[str, str] = {}
@@ -37,6 +38,7 @@ class BaseCrawler(metaclass=ABCMeta):
         self.session = get_session(
             self.n_retries, self.backoff, user_agent=self.user_agent
         )
+        self.limit = limit
 
     @abstractmethod
     def parse_data(self, soup: BeautifulSoup) -> dict:
@@ -50,9 +52,19 @@ class BaseCrawler(metaclass=ABCMeta):
         response = self.session.get(self.link, timeout=self.timeout)
         body = response_meta(response)
         if response.ok:
-            soup = BeautifulSoup(response.text)
-            data = self.parse_data(soup)
-            next_link = self.get_next_link(soup)
+            soup = BeautifulSoup(response.text,  "html.parser")
+            try:
+                data = self.parse_data(soup)
+            except Exception as e:
+                raise ValueError(
+                    f".parse_data failed on link {self.link} with exception:\n{str(e)}"
+                )
+            try:
+                next_link = self.get_next_link(soup)
+            except Exception as e:
+                raise ValueError(
+                    f".get_next_link failed on link {self.link} with exception:\n{str(e)}"
+                )
         else:
             data = {}
             next_link = None
@@ -61,10 +73,10 @@ class BaseCrawler(metaclass=ABCMeta):
         return body
 
     def load_data(self) -> None:
-        
+
         if self.link is None:
             return
-
+        i = 0
         while True:
             if self.cache:
                 cached_data = restore_from_cache(self.output, self.link)
@@ -77,30 +89,41 @@ class BaseCrawler(metaclass=ABCMeta):
 
             self.link = data["next_link"]
 
-            if self.link is None:
+            i += 1
+
+            if self.link is None or (self.limit is not None and self.limit == i):
                 break
 
 
 from urllib.parse import urljoin
 
-class MosRestCrawler(BaseCrawler):
 
+class MosRestCrawler(BaseCrawler):
     def parse_data(self, soup: BeautifulSoup) -> Dict[str, list]:
         rests_upper = soup.find("ul", class_="l-restaurants clearfix")
         rests_vertical = soup.find("ul", class_="l-restaurants-vertical clearfix")
-        cards0 = rests_upper.find_all("span", class_='vcard')
-        cards1 = rests_vertical.find_all("span", class_='vcard')
-        return {'cards': list(map(str, cards0 + cards1))}
+        if rests_upper is not None:
+            cards0 = rests_upper.find_all("span", class_="vcard")
+        else:
+            cards0 = []
+        if rests_vertical is not None:
+            cards1 = rests_vertical.find_all("span", class_="vcard")
+        else:
+            cards1 = []
+        return {"cards": list(map(str, cards0 + cards1))}
 
     def get_next_link(self, soup: BeautifulSoup) -> Optional[str]:
         parent = soup.find("div", class_="restaurants_rating clearfix")
-        pagination = parent.find("ul", class_="l-links clearfix", recursive=False).find_all(
-            "a"
-        )
+        pagination = parent.find(
+            "ul", class_="l-links clearfix", recursive=False
+        ).find_all("a")
 
+        flag = False
         for path in pagination:
             url = urljoin(self.base_url, path.attrs["href"])
-            if url.strip('/') != self.link.strip('/'):
+            if flag:
                 return url
-        return None
 
+            if url.strip("/") == self.link.strip("/"):
+                flag = True
+        return None
