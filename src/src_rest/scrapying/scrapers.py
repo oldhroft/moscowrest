@@ -52,7 +52,7 @@ class BaseCrawler(metaclass=ABCMeta):
         response = self.session.get(self.link, timeout=self.timeout)
         body = response_meta(response)
         if response.ok:
-            soup = BeautifulSoup(response.text,  "html.parser")
+            soup = BeautifulSoup(response.text, "html.parser")
             try:
                 data = self.parse_data(soup)
             except Exception as e:
@@ -78,6 +78,7 @@ class BaseCrawler(metaclass=ABCMeta):
             return
         i = 0
         while True:
+            print(f"Parsing data from {self.link}")
             if self.cache:
                 cached_data = restore_from_cache(self.output, self.link)
 
@@ -85,6 +86,7 @@ class BaseCrawler(metaclass=ABCMeta):
                 data = self.get_data()
                 dump_to_cache(data, self.output, self.link)
             else:
+                print(f"Restoring data {self.link}")
                 data = cached_data
 
             self.link = data["next_link"]
@@ -92,31 +94,40 @@ class BaseCrawler(metaclass=ABCMeta):
             i += 1
 
             if self.link is None or (self.limit is not None and self.limit == i):
+                print("Terminating!")
                 break
 
 
 from urllib.parse import urljoin
+from bs4.element import Tag
 
 
 class MosRestCrawler(BaseCrawler):
     def parse_data(self, soup: BeautifulSoup) -> Dict[str, list]:
         rests_upper = soup.find("ul", class_="l-restaurants clearfix")
         rests_vertical = soup.find("ul", class_="l-restaurants-vertical clearfix")
-        if rests_upper is not None:
-            cards0 = rests_upper.find_all("span", class_="vcard")
+        if isinstance(rests_upper, Tag):
+            cards0 = list(rests_upper.find_all("span", class_="vcard"))
         else:
             cards0 = []
-        if rests_vertical is not None:
-            cards1 = rests_vertical.find_all("span", class_="vcard")
+        if isinstance(rests_vertical, Tag):
+            cards1 = list(rests_vertical.find_all("span", class_="vcard"))
         else:
             cards1 = []
         return {"cards": list(map(str, cards0 + cards1))}
 
     def get_next_link(self, soup: BeautifulSoup) -> Optional[str]:
         parent = soup.find("div", class_="restaurants_rating clearfix")
-        pagination = parent.find(
-            "ul", class_="l-links clearfix", recursive=False
-        ).find_all("a")
+        if isinstance(parent, Tag):
+            pagination_item = parent.find(
+                "ul", class_="l-links clearfix", recursive=False
+            )
+            if isinstance(pagination_item, Tag):
+                pagination = pagination_item.find_all("a")
+            else:
+                return None
+        else:
+            return None
 
         flag = False
         for path in pagination:
