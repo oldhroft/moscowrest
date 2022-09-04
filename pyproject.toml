@@ -17,6 +17,7 @@ click = "^8.1.3"
 pytest-cov = "^3.0.0"
 snakemake = "^7.13.0"
 beautifulsoup4 = "^4.11.1"
+joblib = "^1.1.0"
 
 [tool.poetry.dev-dependencies]
 jupyter = "^1.0.0"
@@ -37,6 +38,7 @@ concat_data = "src_rest.transformers.transform:concat_data"
 process_mosdata = "src_rest.transformers.transform_mosdata:process_mosdata"
 mosdata_datamart = "src_rest.transformers.transform_mosdata:mosdata_datamart"
 load_moscow_restaurants = "src_rest.loaders.data_loaders_scrapy:load_moscow_restaurants"
+process_mos_rest = "src_rest.transformers.transform_mos_rest:process_mos_rest"
 
 [tool.pytest.ini_options]
 addopts = "--cov-report xml:coverage-reports/coverage.xml --cov-report=term-missing --cov=src_rest --cov-report=html"

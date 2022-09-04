@@ -214,9 +214,16 @@ class TestTransformMosdata:
 
 
 from src_rest.transformers.utils import *
+from src_rest.scrapying.utils import dump_json
 
 
 class TestUtils:
+    @pytest.fixture(autouse=True)
+    def init_data(self):
+        safe_mkdir("./test_utils")
+        yield
+        os.system("rm -rf ./test_utils")
+
     def test_extract_attribues(self):
 
         string = "Улица пушкина, дом колотушкина, корпус пичужкина"
@@ -282,6 +289,27 @@ class TestUtils:
         assert building_type["Type"] == "строение"
         assert building_type["Name"] == "пичужкина"
 
+    def test_load_process_json(self):
+
+        json_data = {"key": "value", "some_other_key": "value"}
+
+        def _process_json(data: dict, fname: str) -> dict:
+
+            new_json = {
+                "key": data["key"][0],
+                "some_other_key": data["some_other_key"][0],
+            }
+
+            return new_json
+
+        dump_json(json_data, "./test_utils/test.json")
+
+        data = load_process_json("./test_utils/test.json", _process_json)
+
+        assert isinstance(data, dict)
+        assert data["key"] == "v"
+        assert data["some_other_key"] == "v"
+
 
 from pandas import NA, read_csv, isna
 from src_rest.transformers.transform_mosdata import create_mosdata_datamart
@@ -301,9 +329,9 @@ class TestMosdataDatamart:
         assert df.shape[0] == 2
 
         assert isna(df.PublicPhone.iloc[0])
-        assert df.Name_norm.iloc[0] == 'чебуречная'
-        assert df.StreetType.iloc[1] == 'бульвар'
-        assert df.StreetName.iloc[1] == 'сиреневый'
+        assert df.Name_norm.iloc[0] == "чебуречная"
+        assert df.StreetType.iloc[1] == "бульвар"
+        assert df.StreetName.iloc[1] == "сиреневый"
         assert df.HouseType.iloc[1] == "дом"
         assert df.HouseName.iloc[1] == "15а"
 
@@ -312,7 +340,12 @@ class TestMosdataDatamart:
 
         result = runner.invoke(
             mosdata_datamart,
-            ["--input", "./src/src_rest/tests/data/sample_data.csv", "--output", "./dm/data.csv"],
+            [
+                "--input",
+                "./src/src_rest/tests/data/sample_data.csv",
+                "--output",
+                "./dm/data.csv",
+            ],
         )
 
         assert result.exit_code == 0
@@ -320,8 +353,189 @@ class TestMosdataDatamart:
 
         df = read_csv("./dm/data.csv")
         assert isna(df.PublicPhone.iloc[0])
-        assert df.Name_norm.iloc[0] == 'чебуречная'
-        assert df.StreetType.iloc[1] == 'бульвар'
-        assert df.StreetName.iloc[1] == 'сиреневый'
+        assert df.Name_norm.iloc[0] == "чебуречная"
+        assert df.StreetType.iloc[1] == "бульвар"
+        assert df.StreetName.iloc[1] == "сиреневый"
         assert df.HouseType.iloc[1] == "дом"
         assert df.HouseName.iloc[1] == "15а"
+
+
+from bs4 import BeautifulSoup
+from src_rest.transformers.transform_mos_rest import _extract_value, parse_data, parse_item, process_mos_rest
+
+
+class TestTranformMosRest:
+    @pytest.fixture(autouse=True)
+    def init_data(self):
+        safe_mkdir("./mos_rest")
+        self.sample_html = """<span class="vcard">
+        <a class="clearfix" href="ref.html" title="Name">
+        <span class="rate"><span><img class="round-img-nosize" height="33" src="" width="33"/></span></span>
+        <span class="col col_1"><span class="fn org">Fn org name</span></span>
+        <span class="col col_2">
+        </span>
+        <span class="col col_3"><span>Cuisine</span></span>
+        <span class="col col_4"><span></span></span>
+        </a>
+        <span class="tel"><span class="value-title" title="phone"></span></span>
+        <span class="permalink"><span class="value-title" title="ref"></span></span>
+        <span class="adr">
+        <span class="locality"><span class="value-title" title="Москва"></span></span>
+        <span class="street-address"><span class="value-title" title="address"></span></span>
+        <span class="some_class"><span class="nalue-title" title="val"></span></span>
+        </span>
+        </span>"""
+        self.sample_html1 = """<span class="vcard">
+        <a class="clearfix" href="ref.html" title="Name">
+        <span class="rate"><span><img class="round-img-nosize" height="33" src="" width="33"/></span></span>
+        <span class="col col_1"><span class="fn org">Fn org name</span></span>
+        <span class="col col_2">
+        </span>
+        <span class="col col_3"><span>Cuisine</span></span>
+        <span class="col col_4"><span></span></span>
+        </a>
+        <span class="tel"><span class="value-title" title="phone"></span></span>
+        <span class="permalink"><span class="value-title" title="ref"></span></span>
+        <span class="adr">
+        <span class="loc"><span class="value-title" title="Москва"></span></span>
+        <span class="street-address"><span class="value-title" title="address"></span></span>
+        <span class="some_class"><span class="nalue-title" title="val"></span></span>
+        </span>
+        </span>"""
+        yield
+        # os.system("rm -rf ./mos_rest")
+
+    def test__extract_value(self):
+
+        soup = BeautifulSoup(self.sample_html, "html.parser")
+
+        result = _extract_value(soup, "tel", False)
+        assert result == "phone"
+
+        result = _extract_value(soup, "tel", True)
+        assert result == "phone"
+
+        result = _extract_value(soup, "locality", True)
+        assert result == "Москва"
+
+        with pytest.raises(ValueError):
+            result = _extract_value(soup, "no class", True)
+
+        result = _extract_value(soup, "no class", False)
+        assert result is None
+
+        with pytest.raises(ValueError):
+            result = _extract_value(soup, "some_class", True)
+
+        result = _extract_value(soup, "some_class", False)
+        assert result is None
+    
+    def test_parse_item(self):
+
+        result = parse_item(self.sample_html)
+        assert result['cuisine'] == 'Cuisine'
+
+        with pytest.raises(ValueError):
+            parse_item(self.sample_html1)
+    
+    def test_parse_data(self):
+
+        data = {
+            "ok": True,
+            "data": {
+                "cards": [self.sample_html],
+            },
+            "dttm": "dttm",
+            "url": "url",
+            "fname": "fname"
+        }
+
+        result = parse_data(data, "file.json")
+
+        assert isinstance(result, list)
+        assert isinstance(result[0], dict)
+
+        assert result[0]['dttm'] == "dttm"
+        assert result[0]['cuisine'] == 'Cuisine'
+
+        data = {
+            "ok": False,
+            "data": {
+                "cards": [self.sample_html],
+            },
+            "dttm": "dttm",
+            "url": "url",
+            "fname": "fname"
+        }
+
+        result = parse_data(data, "file.json")
+        assert len(result) == 0
+
+    def test_process_mosrest(self):
+
+        safe_mkdir('./mos_rest/test')
+        data = {
+            "ok": True,
+            "data": {
+                "cards": [self.sample_html],
+            },
+            "dttm": "dttm",
+            "url": "url",
+            "fname": "fname"
+        }
+
+        dump_json(data, "./mos_rest/test/test.json")
+
+        runner = CliRunner()
+
+        runner.invoke(
+            process_mos_rest,
+            [
+                "--input",
+                "./mos_rest/test/",
+                "--output",
+                "./mos_rest/output.csv",
+                "--n_jobs",
+                "-1"
+            ],
+        )
+
+        assert os.path.exists("./mos_rest/output.csv")
+
+        df = read_csv("./mos_rest/output.csv")
+
+        assert df.shape[0] == 1
+        assert df.cuisine.iloc[0] == 'Cuisine'
+
+        data = {
+            "ok": False,
+            "data": {
+                "cards": [self.sample_html],
+            },
+            "dttm": "dttm",
+            "url": "url",
+            "fname": "fname"
+        }
+
+        dump_json(data, "./mos_rest/test/test.json")
+
+        runner = CliRunner()
+
+        runner.invoke(
+            process_mos_rest,
+            [
+                "--input",
+                "./mos_rest/test/",
+                "--output",
+                "./mos_rest/output.csv",
+                "--n_jobs",
+                "-1"
+            ],
+        )
+
+        assert os.path.exists("./mos_rest/output.csv")
+
+        df = read_csv("./mos_rest/output.csv")
+
+        assert df.shape[0] == 0
+

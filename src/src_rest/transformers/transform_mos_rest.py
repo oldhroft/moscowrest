@@ -46,19 +46,40 @@ def parse_item(x: str) -> ParsedItem:
     if isinstance(fn_org, Tag):
         title = fn_org.text
     else:
-        raise ValueError("Title")
+        raise ValueError("Title not found")
+
+    link_item = soup.find("a", class_="permalink")
+    if isinstance(link_item, Tag):
+        link = link_item.attrs["href"]
+    else:
+        link_item = soup.find("a", class_="clearfix")
+        if isinstance(link_item, Tag):
+            link = link_item.attrs["href"]
+        else:
+            raise ValueError("Link not found")
 
     rating_item = soup.find("span", class_="col col_2")
     if isinstance(rating_item, Tag):
         rating_raw = rating_item.find_all("i", class_="i-star orange")
-        rating = len(rating_raw)
+    else:
+        rating_item = soup.find("span", class_="stars")
+        if isinstance(rating_item, Tag):
+            rating_raw = rating_item.find_all("i", class_="i-star orange")
+        else:
+            raise ValueError("Rating not found")
+    rating = len(rating_raw)
 
     cuisine_item = soup.find("span", class_="col col_3")
     if isinstance(cuisine_item, Tag):
         cuisine = cuisine_item.text
+    else:
+        cuisine_item = soup.find("span", class_="cuisine")
+        if isinstance(cuisine_item, Tag):
+            cuisine = cuisine_item.text
+        else:
+            raise ValueError("Cuisine not found!")
 
     phone = _extract_value(soup, "tel", True)
-    link = _extract_value(soup, "permalink", True)
     city = _extract_value(soup, "locality", True)
     address = _extract_value(soup, "street-address", True)
 
@@ -86,3 +107,37 @@ def parse_data(data: dict, fname: str) -> List[ParsedData]:
         result.append(item_casted)
 
     return result
+
+
+import click
+import glob
+import os
+
+from itertools import chain
+
+from joblib import Parallel, delayed
+
+from pandas import DataFrame
+
+from src_rest.transformers.utils import load_process_json
+from src_rest.loaders.utils import check_paths
+
+
+@click.command()
+@click.option("--input", help="input data folder", type=click.STRING, required=True)
+@click.option(
+    "--output", help="desitnation file to save data", required=True, type=click.STRING
+)
+@click.option(
+    "--n_jobs",
+    help="Number of jobs to perform the task",
+    required=True,
+    type=click.INT,
+)
+def process_mos_rest(input: str, output: str, n_jobs=-1) -> None:
+    check_paths(input, output)
+    files = glob.glob(os.path.join(input, "*.json"))
+    result = map(delayed(lambda x: load_process_json(x, parse_data)), files)
+    result = Parallel(n_jobs=n_jobs)(result)
+    df = DataFrame(chain(*result), columns=list(ParsedData.__annotations__.keys()))
+    df.to_csv(output, index=None)
