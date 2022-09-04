@@ -361,7 +361,12 @@ class TestMosdataDatamart:
 
 
 from bs4 import BeautifulSoup
-from src_rest.transformers.transform_mos_rest import _extract_value, parse_data, parse_item, process_mos_rest
+from src_rest.transformers.transform_mos_rest import (
+    _extract_value,
+    parse_data,
+    parse_item,
+    process_mos_rest,
+)
 
 
 class TestTranformMosRest:
@@ -403,7 +408,7 @@ class TestTranformMosRest:
         </span>
         </span>"""
         yield
-        # os.system("rm -rf ./mos_rest")
+        os.system("rm -rf ./mos_rest")
 
     def test__extract_value(self):
 
@@ -429,15 +434,15 @@ class TestTranformMosRest:
 
         result = _extract_value(soup, "some_class", False)
         assert result is None
-    
+
     def test_parse_item(self):
 
         result = parse_item(self.sample_html)
-        assert result['cuisine'] == 'Cuisine'
+        assert result["cuisine"] == "Cuisine"
 
         with pytest.raises(ValueError):
             parse_item(self.sample_html1)
-    
+
     def test_parse_data(self):
 
         data = {
@@ -447,7 +452,7 @@ class TestTranformMosRest:
             },
             "dttm": "dttm",
             "url": "url",
-            "fname": "fname"
+            "fname": "fname",
         }
 
         result = parse_data(data, "file.json")
@@ -455,8 +460,8 @@ class TestTranformMosRest:
         assert isinstance(result, list)
         assert isinstance(result[0], dict)
 
-        assert result[0]['dttm'] == "dttm"
-        assert result[0]['cuisine'] == 'Cuisine'
+        assert result[0]["dttm"] == "dttm"
+        assert result[0]["cuisine"] == "Cuisine"
 
         data = {
             "ok": False,
@@ -465,7 +470,7 @@ class TestTranformMosRest:
             },
             "dttm": "dttm",
             "url": "url",
-            "fname": "fname"
+            "fname": "fname",
         }
 
         result = parse_data(data, "file.json")
@@ -473,7 +478,7 @@ class TestTranformMosRest:
 
     def test_process_mosrest(self):
 
-        safe_mkdir('./mos_rest/test')
+        safe_mkdir("./mos_rest/test")
         data = {
             "ok": True,
             "data": {
@@ -481,7 +486,7 @@ class TestTranformMosRest:
             },
             "dttm": "dttm",
             "url": "url",
-            "fname": "fname"
+            "fname": "fname",
         }
 
         dump_json(data, "./mos_rest/test/test.json")
@@ -496,7 +501,7 @@ class TestTranformMosRest:
                 "--output",
                 "./mos_rest/output.csv",
                 "--n_jobs",
-                "-1"
+                "-1",
             ],
         )
 
@@ -505,7 +510,7 @@ class TestTranformMosRest:
         df = read_csv("./mos_rest/output.csv")
 
         assert df.shape[0] == 1
-        assert df.cuisine.iloc[0] == 'Cuisine'
+        assert df.cuisine.iloc[0] == "Cuisine"
 
         data = {
             "ok": False,
@@ -514,7 +519,7 @@ class TestTranformMosRest:
             },
             "dttm": "dttm",
             "url": "url",
-            "fname": "fname"
+            "fname": "fname",
         }
 
         dump_json(data, "./mos_rest/test/test.json")
@@ -529,7 +534,7 @@ class TestTranformMosRest:
                 "--output",
                 "./mos_rest/output.csv",
                 "--n_jobs",
-                "-1"
+                "-1",
             ],
         )
 
@@ -538,4 +543,3 @@ class TestTranformMosRest:
         df = read_csv("./mos_rest/output.csv")
 
         assert df.shape[0] == 0
-
