@@ -1,10 +1,12 @@
-from typing import Type
-from matplotlib.font_manager import json_dump, json_load
 import pytest
 import requests_mock
 import requests
 import datetime
 import re
+
+from bs4.element import Tag
+
+from typing import cast
 
 from src_rest.scrapying.utils import *
 from src_rest.loaders.utils import safe_mkdir
@@ -70,11 +72,11 @@ class TestUtils:
 
     def test_json_dump_load(self):
         test_json = {"key": 1}
-        json_dump(test_json, "./test_sc_utils/test_dump.json")
+        dump_json(test_json, "./test_sc_utils/test_dump.json")
 
         assert os.path.exists("./test_sc_utils/test_dump.json")
 
-        loaded_json = json_load("./test_sc_utils/test_dump.json")
+        loaded_json = load_json("./test_sc_utils/test_dump.json")
 
         for key, item in test_json.items():
             assert item == loaded_json[key]
@@ -89,11 +91,11 @@ class TestUtils:
             response = requests.get("https://mocker-website.org/mock")
             meta = response_meta(response)
 
-            json_dump(meta, "./test_sc_utils/meta_dump.json")
+            dump_json(meta, "./test_sc_utils/meta_dump.json")
 
             assert os.path.exists("./test_sc_utils/meta_dump.json")
 
-            meta_loaded = json_load("./test_sc_utils/meta_dump.json")
+            meta_loaded = load_json("./test_sc_utils/meta_dump.json")
 
             for key, item in meta.items():
                 assert item == meta_loaded[key]
@@ -175,6 +177,130 @@ class TestUtils:
         base_url = get_base_url(url)
         assert base_url == "https://somewebsite.org"
 
+    def test_scrape_page(self):
+        sample_html = """<!DOCTYPE html>
+        <html>
+        <body>
+        <h1>My First Heading</h1>
+        <p>My first paragraph.</p>
+        </body>
+        </html>"""
+        with requests_mock.Mocker() as m:
+            m.get(
+                "https://mocker-website.org/mock",
+                text=sample_html,
+                status_code=200,
+            )
+
+            session = requests.Session()
+
+            def parse(soup: BeautifulSoup) -> dict:
+                heading = cast(Tag, soup.find("h1"))
+                paragraph = cast(Tag, soup.find("p"))
+                return {"heading": heading.text, "paragraph": paragraph.text}
+
+            data = scrape_page(session, "https://mocker-website.org/mock", 1, parse)
+
+            assert data["ok"]
+            assert data["data"]["heading"] == "My First Heading"
+            assert data["data"]["paragraph"] == "My first paragraph."
+
+    def test_dump_scrape_page(self):
+        sample_html = """<!DOCTYPE html>
+        <html>
+        <body>
+        <h1>My First Heading</h1>
+        <p>My first paragraph.</p>
+        </body>
+        </html>"""
+        with requests_mock.Mocker() as m:
+            m.get(
+                "https://mocker-website.org/mock",
+                text=sample_html,
+                status_code=200,
+            )
+
+            session = requests.Session()
+
+            def parse(soup: BeautifulSoup) -> dict:
+                heading = cast(Tag, soup.find("h1"))
+                paragraph = cast(Tag, soup.find("p"))
+                return {"heading": heading.text, "paragraph": paragraph.text}
+
+            dump_scrape_page(
+                session,
+                "https://mocker-website.org/mock",
+                1,
+                parse,
+                "./test_sc_utils/",
+                True,
+            )
+            data = restore_from_cache(
+                "./test_sc_utils/", "https://mocker-website.org/mock"
+            )
+            assert data["ok"]
+            assert data["data"]["heading"] == "My First Heading"
+            assert data["data"]["paragraph"] == "My first paragraph."
+
+            dump_scrape_page(
+                session,
+                "https://mocker-website.org/mock",
+                1,
+                parse,
+                "./test_sc_utils/",
+                False,
+            )
+            data = restore_from_cache(
+                "./test_sc_utils/", "https://mocker-website.org/mock"
+            )
+            assert data["ok"]
+            assert data["data"]["heading"] == "My First Heading"
+            assert data["data"]["paragraph"] == "My first paragraph."
+            dttm = data["dttm"]
+
+            m.get(
+                "https://mocker-website.org/mock",
+                text=sample_html,
+                status_code=201,
+            )
+
+            dump_scrape_page(
+                session,
+                "https://mocker-website.org/mock",
+                1,
+                parse,
+                "./test_sc_utils/",
+                True,
+            )
+            data = restore_from_cache(
+                "./test_sc_utils/", "https://mocker-website.org/mock"
+            )
+            assert data["status_code"] == 200
+
+            data = dump_scrape_page(
+                session,
+                "https://mocker-website.org/mock",
+                1,
+                parse,
+                "./test_sc_utils/",
+                True,
+                return_data=True,
+            )
+
+            assert data["status_code"] == 200
+
+            data = dump_scrape_page(
+                session,
+                "https://mocker-website.org/mock",
+                1,
+                parse,
+                "./test_sc_utils/",
+                False,
+                return_data=True,
+            )
+
+            assert data["status_code"] == 201
+
 
 from src_rest.scrapying.scrapers import *
 
@@ -207,6 +333,9 @@ class TestScrapers:
         assert isinstance(crawler.session, requests.Session)
         assert crawler.session.headers["User-Agent"] == "Chrome"
 
+    def test_base_link_scraper_creation(self):
+        pass
+
     def test_base_crawler_parsing(self):
 
         sample_html = """<!DOCTYPE html>
@@ -220,8 +349,8 @@ class TestScrapers:
         class SimpleCrawler(BaseCrawler):
             def parse_data(self, soup: BeautifulSoup) -> dict:
 
-                heading = soup.find("h1")
-                paragraph = soup.find("p")
+                heading = cast(Tag, soup.find("h1"))
+                paragraph = cast(Tag, soup.find("p"))
 
                 return {"heading": heading.text, "paragraph": paragraph.text}
 
@@ -234,8 +363,9 @@ class TestScrapers:
             safe_mkdir("./scrapers_tmp/simple")
 
             crawler = SimpleCrawler(url, output="./scrapers_tmp/simple")
+            crawler.get_data()
 
-            data = crawler.get_data()
+            data = restore_from_cache("./scrapers_tmp/simple", url)
 
             for key in [
                 "ok",
@@ -255,7 +385,7 @@ class TestScrapers:
             assert data["ok"]
             assert data["status_code"] == 200
 
-            assert data["next_link"] is None
+            assert data["data"]["next_link"] is None
 
             assert data["data"]["heading"] == "My First Heading"
             assert data["data"]["paragraph"] == "My first paragraph."
@@ -270,14 +400,14 @@ class TestScrapers:
             assert data["sha256"] == hash256(sample_html)
             assert data["ok"]
             assert data["status_code"] == 200
-            assert data["next_link"] is None
+            assert data["data"]["next_link"] is None
             assert data["data"]["heading"] == "My First Heading"
             assert data["data"]["paragraph"] == "My first paragraph."
 
             crawler.load_data()
             crawler.load_data()
 
-            crawler = SimpleCrawler(url, output="./scrapers_tmp/simple")
+            crawler = SimpleCrawler(url, output="./scrapers_tmp/simple", cache=False)
             crawler.load_data()
 
             assert m.call_count == 2
@@ -308,9 +438,8 @@ class TestScrapers:
         class SimpleCrawler(BaseCrawler):
             def parse_data(self, soup: BeautifulSoup) -> dict:
 
-                heading = soup.find("h1")
-                paragraph = soup.find("p")
-
+                heading = cast(Tag, soup.find("h1"))
+                paragraph = cast(Tag, soup.find("p"))
                 return {"heading": heading.text, "paragraph": paragraph.text}
 
             def get_next_link(self, soup: BeautifulSoup) -> Optional[str]:
