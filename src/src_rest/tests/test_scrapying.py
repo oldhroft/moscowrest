@@ -333,9 +333,6 @@ class TestScrapers:
         assert isinstance(crawler.session, requests.Session)
         assert crawler.session.headers["User-Agent"] == "Chrome"
 
-    def test_base_link_scraper_creation(self):
-        pass
-
     def test_base_crawler_parsing(self):
 
         sample_html = """<!DOCTYPE html>
@@ -457,6 +454,120 @@ class TestScrapers:
 
             restored = restore_from_cache(loc, url2)
             assert restored["data"]["heading"] == "My second Heading"
+
+    def test_base_link_scraper_creation(self):
+        with pytest.raises(TypeError):
+            BaseLinkScraper(["https://some_website.org"], output="./scrapers_tmp")
+
+        class SimpleScraper(BaseLinkScraper):
+            def parse_data(self, soup: BeautifulSoup) -> dict:
+                return {"key": "value"}
+
+        crawler = SimpleScraper(
+            ["some_link"], "some_path", user_agent="Chrome", backend="threading"
+        )
+        assert isinstance(crawler, SimpleScraper)
+        assert issubclass(SimpleScraper, BaseScraper)
+        assert isinstance(crawler, BaseScraper)
+
+        assert isinstance(crawler.session, requests.Session)
+        assert crawler.session.headers["User-Agent"] == "Chrome"
+        assert crawler.n_jobs == 30
+
+    def test_base_link_scraper_parsing(self):
+
+        sample_html1 = """<!DOCTYPE html>
+        <html>
+        <body>
+        <h1>My First Heading</h1>
+        <p>My first paragraph.</p>
+        </body>
+        </html>"""
+
+        sample_html2 = """<!DOCTYPE html>
+        <html>
+        <body>
+        <h1>My Second Heading</h1>
+        <p>My second paragraph.</p>
+        </body>
+        </html>"""
+
+        url1 = "https://www.sample-html-website.org/page1"
+        url2 = "https://www.sample-html-website.org/page2"
+
+        class SimpleScraper(BaseLinkScraper):
+            def parse_data(self, soup: BeautifulSoup) -> dict:
+
+                heading = cast(Tag, soup.find("h1"))
+                paragraph = cast(Tag, soup.find("p"))
+
+                return {"heading": heading.text, "paragraph": paragraph.text}
+
+        with requests_mock.Mocker() as m:
+            m.get(url1, text=sample_html1, status_code=200)
+            m.get(url2, text=sample_html2, status_code=200)
+            safe_mkdir("./scrapers_tmp/scrapy")
+
+            crawler = SimpleScraper(
+                [url1, url2], output="./scrapers_tmp/scrapy", backend="threading"
+            )
+            crawler.load_data()
+
+            data = restore_from_cache("./scrapers_tmp/scrapy", url1)
+
+            for key in [
+                "ok",
+                "elapsed",
+                "status_code",
+                "reason",
+                "url",
+                "encoding",
+                "dttm",
+                "sha256",
+                "headers",
+                "data",
+            ]:
+                assert key in data
+
+            assert data["sha256"] == hash256(sample_html1)
+            assert data["ok"]
+            assert data["status_code"] == 200
+
+            assert data["data"]["heading"] == "My First Heading"
+            assert data["data"]["paragraph"] == "My first paragraph."
+
+            data = restore_from_cache("./scrapers_tmp/scrapy", url2)
+
+            for key in [
+                "ok",
+                "elapsed",
+                "status_code",
+                "reason",
+                "url",
+                "encoding",
+                "dttm",
+                "sha256",
+                "headers",
+                "data",
+            ]:
+                assert key in data
+
+            assert data["sha256"] == hash256(sample_html2)
+            assert data["ok"]
+            assert data["status_code"] == 200
+
+            assert data["data"]["heading"] == "My Second Heading"
+            assert data["data"]["paragraph"] == "My second paragraph."
+
+            crawler.load_data()
+            crawler.load_data()
+
+            crawler = SimpleScraper(
+                [url1, url2], output="./scrapers_tmp/scrapy", cache=False
+            )
+            crawler.load_data()
+
+            assert m.call_count == 4
 
 
 from bs4 import BeautifulSoup

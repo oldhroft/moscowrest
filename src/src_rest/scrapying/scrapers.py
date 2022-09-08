@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABCMeta
 from bs4 import BeautifulSoup
 
-from typing import Dict, Optional, cast
+from typing import Dict, Optional, List, cast
 
 from src_rest.scrapying.utils import (
     get_base_url,
@@ -136,9 +136,13 @@ class MosRestCrawler(BaseCrawler):
         return None
 
 
+from joblib import Parallel, delayed
+
+
 class BaseLinkScraper(BaseScraper):
     def __init__(
         self,
+        links: List[str],
         output: str,
         user_agent: str = None,
         cache: bool = True,
@@ -146,5 +150,34 @@ class BaseLinkScraper(BaseScraper):
         backoff: int = 1,
         timeout: int = 10,
         limit: Optional[int] = None,
+        n_jobs: int = -1,
+        backend: str = "threading",
     ) -> None:
         super().__init__(output, user_agent, cache, n_retries, backoff, timeout, limit)
+        self.links = links
+        self.backend = backend
+        if backend == "threading" and n_jobs == -1:
+            self.n_jobs = 30
+        else:
+            self.n_jobs = n_jobs
+
+        if limit is not None:
+            self.links = self.links[:limit]
+
+    def load_data(self) -> None:
+
+        result = map(
+            delayed(
+                lambda x: dump_scrape_page(
+                    self.session,
+                    x,
+                    self.timeout,
+                    self.parse_data,
+                    self.output,
+                    self.cache,
+                )
+            ),
+            self.links,
+        )
+
+        Parallel(n_jobs=self.n_jobs, backend=self.backend)(result)
