@@ -182,13 +182,14 @@ class BaseLinkScraper(BaseScraper):
 
         Parallel(n_jobs=self.n_jobs, backend=self.backend)(result)
 
+
 import re
 
-class MosRestScraper(BaseLinkScraper):
 
+class MosRestScraper(BaseLinkScraper):
     def parse_data(self, soup: BeautifulSoup) -> dict:
 
-        pattern = 'Placemark\\(\\[(\\d+\\.\\d+),\\ (\\d+.\\d+)\\]' 
+        pattern = "Placemark\\(\\[(\\d+\\.\\d+),\\ (\\d+.\\d+)\\]"
         div_ymap = soup.find("div", class_="col col_img")
         if isinstance(div_ymap, Tag):
             script = div_ymap.find("script", type="text/javascript")
@@ -218,19 +219,19 @@ class MosRestScraper(BaseLinkScraper):
 
             oh_card = main_data.find("meta", itemprop="openingHours")
             if isinstance(oh_card, Tag):
-                whours = oh_card.attrs['content']
+                whours = oh_card.attrs["content"]
             else:
                 whours = None
 
             sa_card = main_data.find("meta", itemprop="streetAddress")
             if isinstance(sa_card, Tag):
-                street_address = sa_card.attrs['content']
+                street_address = sa_card.attrs["content"]
             else:
                 street_address = None
 
             al_card = main_data.find("meta", itemprop="addressLocality")
             if isinstance(al_card, Tag):
-                address_locality = al_card.attrs['content']
+                address_locality = al_card.attrs["content"]
             else:
                 address_locality = None
 
@@ -248,7 +249,9 @@ class MosRestScraper(BaseLinkScraper):
             aspect_stars = {}
             for title, stars_div in zip(titles, stars):
 
-                aspect_stars[title.text] = len(stars_div.find_all("i", class_="i-star orange"))
+                aspect_stars[title.text] = len(
+                    stars_div.find_all("i", class_="i-star orange")
+                )
 
         review = soup.find("div", class_="item-review-col_right")
         if not isinstance(review, Tag):
@@ -267,6 +270,5 @@ class MosRestScraper(BaseLinkScraper):
             "street_address": street_address,
             "address_locality": address_locality,
             "aspect_stars": aspect_stars,
-            "review": text
+            "review": text,
         }
-

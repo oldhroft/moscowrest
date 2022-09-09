@@ -59,9 +59,7 @@ from src_rest.scrapying.scrapers import MosRestScraper
 
 
 @click.command()
-@click.option(
-    "--input", help="Input data with links", type=click.STRING, required=True
-)
+@click.option("--input", help="Input data with links", type=click.STRING, required=True)
 @click.option(
     "--output", help="Output path to load data", type=click.STRING, required=True
 )

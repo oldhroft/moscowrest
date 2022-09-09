@@ -117,6 +117,7 @@ def scrape_page(
             f"{func.__name__} failed on link {url} with exception:\n{str(e)}"
         )
 
+
 def dump_scrape_page(
     session: Session,
     url: str,
@@ -125,7 +126,7 @@ def dump_scrape_page(
     output: str,
     cache: bool = False,
     return_data: bool = False,
-    verbose: bool = True
+    verbose: bool = True,
 ) -> Optional[JSON_TYPE]:
 
     if cache:
@@ -138,7 +139,8 @@ def dump_scrape_page(
         dump_to_cache(data, output, url)
         if return_data:
             return data
-        else: return None
+        else:
+            return None
     else:
         if verbose:
             print(f"Restoring data from {url}")
@@ -146,4 +148,3 @@ def dump_scrape_page(
             return cached_data
         else:
             return None
-        
