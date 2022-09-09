@@ -181,3 +181,92 @@ class BaseLinkScraper(BaseScraper):
         )
 
         Parallel(n_jobs=self.n_jobs, backend=self.backend)(result)
+
+import re
+
+class MosRestScraper(BaseLinkScraper):
+
+    def parse_data(self, soup: BeautifulSoup) -> dict:
+
+        pattern = 'Placemark\\(\\[(\\d+\\.\\d+),\\ (\\d+.\\d+)\\]' 
+        div_ymap = soup.find("div", class_="col col_img")
+        if isinstance(div_ymap, Tag):
+            script = div_ymap.find("script", type="text/javascript")
+            if isinstance(script, Tag):
+
+                match = re.search(pattern, script.text)
+                if match is not None:
+                    x = float(match.group(1))
+                    y = float(match.group(2))
+                else:
+                    x = None
+                    y = None
+            else:
+                raise ValueError("Maps script not found")
+        else:
+            x = None
+            y = None
+
+        main_data = soup.find("div", class_="data")
+
+        if isinstance(main_data, Tag):
+            avg_check_card = main_data.find("div", class_="row average_check")
+            if isinstance(avg_check_card, Tag):
+                avg_check = avg_check_card.text
+            else:
+                avg_check = None
+
+            oh_card = main_data.find("meta", itemprop="openingHours")
+            if isinstance(oh_card, Tag):
+                whours = oh_card.attrs['content']
+            else:
+                whours = None
+
+            sa_card = main_data.find("meta", itemprop="streetAddress")
+            if isinstance(sa_card, Tag):
+                street_address = sa_card.attrs['content']
+            else:
+                street_address = None
+
+            al_card = main_data.find("meta", itemprop="addressLocality")
+            if isinstance(al_card, Tag):
+                address_locality = al_card.attrs['content']
+            else:
+                address_locality = None
+
+        else:
+            raise ValueError("div with data not found")
+
+        rest_stars = soup.find("div", class_="rest_stats")
+
+        if not isinstance(rest_stars, Tag):
+            aspect_stars = None
+        else:
+            titles = rest_stars.find_all("div", class_="title")
+            stars = rest_stars.find_all("div", class_="stars")
+
+            aspect_stars = {}
+            for title, stars_div in zip(titles, stars):
+
+                aspect_stars[title.text] = len(stars_div.find_all("i", class_="i-star orange"))
+
+        review = soup.find("div", class_="item-review-col_right")
+        if not isinstance(review, Tag):
+            text = None
+        else:
+            text_item = review.find("div", class_="data-text")
+            if not isinstance(text_item, Tag):
+                raise ValueError("text of review not found")
+            text = text_item.text.strip("\r\n\t ")
+
+        return {
+            "x_coord": x,
+            "y_coord": y,
+            "avg_check": avg_check,
+            "opening_hours": whours,
+            "street_address": street_address,
+            "address_locality": address_locality,
+            "aspect_stars": aspect_stars,
+            "review": text
+        }
+

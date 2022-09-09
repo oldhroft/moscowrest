@@ -116,6 +116,7 @@ import os
 from itertools import chain
 
 from joblib import Parallel, delayed
+from urllib.parse import urljoin
 
 from pandas import DataFrame
 
@@ -140,4 +141,7 @@ def process_mos_rest(input: str, output: str, n_jobs=-1) -> None:
     result = map(delayed(lambda x: load_process_json(x, parse_data)), files)
     result = Parallel(n_jobs=n_jobs)(result)
     df = DataFrame(chain(*result), columns=list(ParsedData.__annotations__.keys()))
+    base_url = "https://www.moscow-restaurants.ru/"
+    df["link"] = df.link.apply(lambda x: urljoin(base_url, x))
+    df = df.drop_duplicates(subset=["link"]).reset_index(drop=True)
     df.to_csv(output, index=None)

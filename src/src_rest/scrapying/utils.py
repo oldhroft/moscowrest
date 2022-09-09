@@ -124,19 +124,24 @@ def dump_scrape_page(
     func: Callable[[BeautifulSoup], JSON_TYPE],
     output: str,
     cache: bool = False,
-    return_data: bool = False
+    return_data: bool = False,
+    verbose: bool = True
 ) -> Optional[JSON_TYPE]:
 
     if cache:
         cached_data = restore_from_cache(output, url)
 
     if not cache or cached_data is None:
+        if verbose:
+            print(f"Parsing data from {url}")
         data = scrape_page(session, url, timeout, func)
         dump_to_cache(data, output, url)
         if return_data:
             return data
         else: return None
     else:
+        if verbose:
+            print(f"Restoring data from {url}")
         if return_data:
             return cached_data
         else:
