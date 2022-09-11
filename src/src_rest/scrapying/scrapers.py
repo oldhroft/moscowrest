@@ -197,8 +197,8 @@ class MosRestScraper(BaseLinkScraper):
 
                 match = re.search(pattern, script.text)
                 if match is not None:
-                    x = float(match.group(1))
-                    y = float(match.group(2))
+                    x = float(match.group(2))
+                    y = float(match.group(1))
                 else:
                     x = None
                     y = None
