@@ -131,7 +131,7 @@ def parse_details(data: dict, fname: str) -> List[ParsedDetails]:
         result: List[ParsedDetails] = []
         return result
 
-    aspect = data["aspect_stars"]
+    aspect = data["data"]["aspect_stars"]
     if isinstance(aspect, dict):
         aspect_json = json.dumps(aspect)
     else:
