@@ -33,4 +33,4 @@ def concat_data(input: str, is_list: bool, output: str, format: str) -> None:
         with open(output, 'w', encoding='utf-8') as file:
             json.dump(data, file)
     else:
-        DataFrame(data).to_csv(output)
+        DataFrame(data).to_csv(output, index=None)

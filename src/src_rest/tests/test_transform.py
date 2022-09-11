@@ -364,6 +364,7 @@ from bs4 import BeautifulSoup
 from src_rest.transformers.transform_mos_rest import (
     _extract_value,
     parse_data,
+    parse_details,
     parse_item,
     process_mos_rest,
 )
@@ -543,3 +544,39 @@ class TestTranformMosRest:
         df = read_csv("./mos_rest/output.csv")
 
         assert df.shape[0] == 0
+
+    def test_parse_details(self):
+
+        details = {
+            "ok": True,
+            "elapsed": 1.204689,
+            "status_code": 200,
+            "reason": "OK",
+            "url": "website.org",
+            "encoding": "utf-8",
+            "headers": {"key": "value"},
+            "dttm": "2022-09-09 20:24:22",
+            "sha256": "20df197c0c6348e11e9b238c8386e5abe980bf8d00930bd75c918fd7598048ea",
+            "data": {
+                "x_coord": 0.0,
+                "y_coord": 0.0,
+                "avg_check": "check",
+                "opening_hours": "regime",
+                "street_address": "Address",
+                "address_locality": "Locality",
+                "aspect_stars": {"card": 0},
+                "review": "review",
+            },
+        }
+
+        result = parse_details(details, "file.json")[0]
+        assert result["url"] == "website.org"
+        assert result["fname"] == "file.json"
+        assert result["dttm"] ==  "2022-09-09 20:24:22"
+        assert result["x_coord"] == 0
+        assert result["y_coord"] == 0
+        assert result["avg_check"] == "check"
+        for key in details["data"]:
+            assert key in result
+
+        

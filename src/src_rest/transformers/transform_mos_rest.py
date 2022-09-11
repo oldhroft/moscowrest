@@ -19,6 +19,19 @@ class ParsedData(ParsedItem):
     dttm: str
     fname: str
 
+class ParsedDetails:
+    url: str
+    dttm: str
+    fname: str
+    x_coord: Optional[float]
+    y_coord:  Optional[float]
+    avg_check: Optional[str]
+    opening_hours: Optional[str]
+    street_address: Optional[str]
+    street_locality: Optional[str]
+    aspect_stars: Optional[dict]
+    review: Optional[str]
+
 
 def _extract_value(
     soup: BeautifulSoup, class_name, raise_error: bool = False
@@ -109,6 +122,30 @@ def parse_data(data: dict, fname: str) -> List[ParsedData]:
     return result
 
 
+def parse_details(data: dict, fname: str) -> List[ParsedDetails]:
+
+    if not data["ok"]:
+        print(f"Missed data {fname}, {data['url']}")
+        result: List[ParsedDetails] = []
+        return result
+
+    item = {
+        "url": data["url"],
+        "dttm": data["dttm"],
+        "fname": fname,
+        "x_coord": data["data"]['x_coord'],
+        "y_coord": data["data"]["y_coord"],
+        "avg_check": data["data"]["avg_check"],
+        "opening_hours": data["data"]["opening_hours"],
+        "street_address": data["data"]['street_address'],
+        "address_locality": data["data"]['address_locality'],
+        "aspect_stars": data["data"]["aspect_stars"],
+        "review": data["data"]['review']
+    }
+    item_details = cast(ParsedDetails, item)
+    return [item_details]
+
+
 import click
 import glob
 import os
@@ -144,4 +181,23 @@ def process_mos_rest(input: str, output: str, n_jobs=-1) -> None:
     base_url = "https://www.moscow-restaurants.ru/"
     df["link"] = df.link.apply(lambda x: urljoin(base_url, x))
     df = df.drop_duplicates(subset=["link"]).reset_index(drop=True)
+    df.to_csv(output, index=None)
+
+@click.command()
+@click.option("--input", help="input data folder", type=click.STRING, required=True)
+@click.option(
+    "--output", help="desitnation file to save data", required=True, type=click.STRING
+)
+@click.option(
+    "--n_jobs",
+    help="Number of jobs to perform the task",
+    required=True,
+    type=click.INT,
+)
+def process_mos_rest_detailed(input: str, output: str, n_jobs=-1) -> None:
+    check_paths(input, output)
+    files = glob.glob(os.path.join(input, "*.json"))
+    result = map(delayed(lambda x: load_process_json(x, parse_details)), files)
+    result = Parallel(n_jobs=n_jobs)(result)
+    df = DataFrame(chain(*result), columns=list(ParsedDetails.__annotations__.keys()))
     df.to_csv(output, index=None)
