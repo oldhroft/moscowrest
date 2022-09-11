@@ -556,7 +556,7 @@ class TestTranformMosRest:
             "encoding": "utf-8",
             "headers": {"key": "value"},
             "dttm": "2022-09-09 20:24:22",
-            "sha256": "20df197c0c6348e11e9b238c8386e5abe980bf8d00930bd75c918fd7598048ea",
+            "sha256": "20df19",
             "data": {
                 "x_coord": 0.0,
                 "y_coord": 0.0,
@@ -572,11 +572,10 @@ class TestTranformMosRest:
         result = parse_details(details, "file.json")[0]
         assert result["url"] == "website.org"
         assert result["fname"] == "file.json"
-        assert result["dttm"] ==  "2022-09-09 20:24:22"
+        assert result["dttm"] == "2022-09-09 20:24:22"
         assert result["x_coord"] == 0
         assert result["y_coord"] == 0
         assert result["avg_check"] == "check"
         for key in details["data"]:
             assert key in result
-
-        
+        assert isinstance(result["aspect_stars"], str)

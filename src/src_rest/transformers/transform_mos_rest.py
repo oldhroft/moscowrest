@@ -1,3 +1,4 @@
+import json
 from typing import TypedDict
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -19,17 +20,18 @@ class ParsedData(ParsedItem):
     dttm: str
     fname: str
 
+
 class ParsedDetails:
     url: str
     dttm: str
     fname: str
     x_coord: Optional[float]
-    y_coord:  Optional[float]
+    y_coord: Optional[float]
     avg_check: Optional[str]
     opening_hours: Optional[str]
     street_address: Optional[str]
     street_locality: Optional[str]
-    aspect_stars: Optional[dict]
+    aspect_stars: Optional[str]
     review: Optional[str]
 
 
@@ -129,18 +131,24 @@ def parse_details(data: dict, fname: str) -> List[ParsedDetails]:
         result: List[ParsedDetails] = []
         return result
 
+    aspect = data["aspect_stars"]
+    if isinstance(aspect, dict):
+        aspect_json = json.dumps(aspect)
+    else:
+        aspect_json = None
+
     item = {
         "url": data["url"],
         "dttm": data["dttm"],
         "fname": fname,
-        "x_coord": data["data"]['x_coord'],
+        "x_coord": data["data"]["x_coord"],
         "y_coord": data["data"]["y_coord"],
         "avg_check": data["data"]["avg_check"],
         "opening_hours": data["data"]["opening_hours"],
-        "street_address": data["data"]['street_address'],
-        "address_locality": data["data"]['address_locality'],
-        "aspect_stars": data["data"]["aspect_stars"],
-        "review": data["data"]['review']
+        "street_address": data["data"]["street_address"],
+        "address_locality": data["data"]["address_locality"],
+        "aspect_stars": aspect_json,
+        "review": data["data"]["review"],
     }
     item_details = cast(ParsedDetails, item)
     return [item_details]
@@ -182,6 +190,7 @@ def process_mos_rest(input: str, output: str, n_jobs=-1) -> None:
     df["link"] = df.link.apply(lambda x: urljoin(base_url, x))
     df = df.drop_duplicates(subset=["link"]).reset_index(drop=True)
     df.to_csv(output, index=None)
+
 
 @click.command()
 @click.option("--input", help="input data folder", type=click.STRING, required=True)
