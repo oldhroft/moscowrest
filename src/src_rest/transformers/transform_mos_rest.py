@@ -281,7 +281,7 @@ def create_mos_rest_datamart(
         "opening_hours",
         "street_address",
         "street_locality",
-        "global_id"
+        "global_id",
     ]
 
     print("Selecting main result")
@@ -306,7 +306,7 @@ def create_mos_rest_datamart(
     )
 
     print("Selecting reviews")
-    reviews = df_with_id.loc[:, ["global_id", "review"]].assign(
+    reviews = df_with_id.loc[df_with_id.review.notna(), ["global_id", "review"]].assign(
         source="https://www.moscow-restaurants.ru/"
     )
 
