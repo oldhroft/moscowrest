@@ -4,8 +4,6 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from typing import Optional, List, cast
 
-from traitlets import default
-
 
 class ParsedItem(TypedDict):
     title: Optional[str]
