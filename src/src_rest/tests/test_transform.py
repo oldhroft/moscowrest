@@ -579,3 +579,12 @@ class TestTranformMosRest:
         for key in details["data"]:
             assert key in result
         assert isinstance(result["aspect_stars"], str)
+
+
+class TestTransformMosRestDetails:
+    @pytest.fixture(autouse=True)
+    def init_data(self):
+        pass
+
+    def test_haversine_vectorized(self):
+        pass

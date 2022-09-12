@@ -59,3 +59,27 @@ def load_process_json(
     data = load_json(path)
     basename = os.path.basename(path)
     return func(data, basename)
+
+from typing import Union
+from pandas import Series
+from numpy import ndarray, radians, sin, cos, arcsin, sqrt
+
+ARRAY_TYPE = Union[ndarray, Series]
+
+
+def haversine_vectorize(
+    lon1: ARRAY_TYPE, lat1: ARRAY_TYPE, lon2: ARRAY_TYPE, lat2: ARRAY_TYPE
+):
+
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+
+    newlon = lon2 - lon1
+    newlat = lat2 - lat1
+
+    haver_formula = (
+        sin(newlat / 2.0) ** 2 + cos(lat1) * cos(lat2) * sin(newlon / 2.0) ** 2
+    )
+
+    dist = 2 * arcsin(sqrt(haver_formula))
+    km = 6_367_000 * dist
+    return km

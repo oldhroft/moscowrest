@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from typing import Optional, List, cast
 
+from traitlets import default
+
 
 class ParsedItem(TypedDict):
     title: Optional[str]
@@ -210,3 +212,162 @@ def process_mos_rest_detailed(input: str, output: str, n_jobs=-1) -> None:
     result = Parallel(n_jobs=n_jobs)(result)
     df = DataFrame(chain(*result), columns=list(ParsedDetails.__annotations__.keys()))
     df.to_csv(output, index=None)
+
+
+from src_rest.transformers.utils import haversine_vectorize
+
+from numpy import arange
+from pandas import read_csv
+
+
+def create_mos_rest_datamart(
+    df: DataFrame, details: DataFrame, df_comp: DataFrame, dist_threshold: float
+):
+    df = (
+        df.drop(["url", "dttm", "fname"], axis=1)
+        .merge(details, how="inner", left_on="link", right_on="url")
+        .assign(
+            left_id=lambda x: arange(len(x)),
+            key=1,
+            title_norm=lambda x: x.title.str.lower(),
+        )
+    )
+
+    df_comp["key"] = 1
+
+    col_comp = ["global_id", "key", "x_coord", "y_coord", "Name_norm"]
+    col_df = ["left_id", "key", "x_coord", "y_coord", "title_norm"]
+    print("Creating cartesian product")
+    data_product = df_comp[col_comp].merge(df[col_df], on="key")
+    print("Calculating distances")
+    data_product["distance"] = haversine_vectorize(
+        data_product.x_coord_x,
+        data_product.y_coord_x,
+        data_product.x_coord_y,
+        data_product.y_coord_y,
+    )
+    print("Data product shape", data_product.shape[0])
+
+    print("Finding rests in close proximity")
+    close_proximity = data_product.loc[lambda x: x.distance <= dist_threshold]
+    print("Close proximity number", close_proximity.shape[0])
+    print("Calculating close names")
+    match1 = close_proximity.apply(lambda x: x.Name_norm in x.title_norm, axis=1)
+    match2 = close_proximity.apply(lambda x: x.title_norm in x.Name_norm, axis=1)
+    mapping = (
+        close_proximity.loc[match1 | match2]
+        .sort_values(by="distance")
+        .loc[:, ["global_id", "left_id"]]
+        .drop_duplicates(subset=["left_id"])
+    )
+    print("Number of matched", mapping.shape[0])
+
+    print("Finding relation between data and general data")
+    df_with_id = df.drop("key", axis=1).merge(mapping, how="inner", on="left_id")
+
+    final_columns = [
+        "url",
+        "dttm",
+        "fname",
+        "title",
+        "rating",
+        "cuisine",
+        "phone",
+        "city",
+        "address",
+        "x_coord",
+        "y_coord",
+        "avg_check",
+        "opening_hours",
+        "street_address",
+        "street_locality",
+        "global_id"
+    ]
+
+    print("Selecting main result")
+    df_main = df_with_id[final_columns]
+
+    print("Selecting aspects")
+    aspects = (
+        df_with_id.loc[df_with_id.aspect_stars.notna(), ["global_id", "aspect_stars"]]
+        .reset_index(drop=True)
+        .assign(aspect_stars=lambda x: x.aspect_stars.apply(json.loads))
+    )
+
+    aspects = (
+        aspects.explode("aspect_stars")
+        .join(aspects.add_suffix("_full"))
+        .assign(
+            rating=lambda x: x.apply(
+                lambda y: y.aspect_stars_full[y.aspect_stars], axis=1
+            )
+        )
+        .drop(["aspect_stars_full", "global_id_full"], axis=1)
+    )
+
+    print("Selecting reviews")
+    reviews = df_with_id.loc[:, ["global_id", "review"]].assign(
+        source="https://www.moscow-restaurants.ru/"
+    )
+
+    return df_main, aspects, reviews
+
+
+@click.command()
+@click.option("--input", help="Input data path", type=click.STRING, required=True)
+@click.option(
+    "--input_details",
+    help="Input data path for details",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "--input_global",
+    help="Input data path for global data",
+    type=click.STRING,
+    required=True,
+)
+@click.option("--output", help="Output data path", type=click.STRING, required=True)
+@click.option(
+    "--output_aspect",
+    help="Output data path for aspects",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "--output_review",
+    help="Output data path for reviews",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "--dist_threshold",
+    help="Distance threshold in meters",
+    type=click.FLOAT,
+    required=False,
+    default=300,
+)
+def mos_rest_datamart(
+    input: str,
+    input_details: str,
+    input_global: str,
+    output: str,
+    output_aspect: str,
+    output_review: str,
+    dist_threshold: float,
+) -> None:
+
+    check_paths(input, output)
+    check_paths(input_details, output_aspect)
+    check_paths(input_global, output_review)
+    df = read_csv(input)
+    details = read_csv(input_details)
+    df_comp = read_csv(input_global)
+
+    df_main, aspects, reviews = create_mos_rest_datamart(
+        df, details, df_comp, dist_threshold=dist_threshold
+    )
+
+    df_main.to_csv(output, index=None)
+    aspects.to_csv(output_aspect, index=None)
+    reviews.to_csv(output_review, index=None)

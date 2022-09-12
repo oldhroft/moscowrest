@@ -41,6 +41,7 @@ load_moscow_restaurants = "src_rest.loaders.data_loaders_scrapy:load_moscow_rest
 load_moscow_restaurants_det = "src_rest.loaders.data_loaders_scrapy:load_moscow_restaurants_detailed"
 process_mos_rest = "src_rest.transformers.transform_mos_rest:process_mos_rest"
 process_mos_rest_detailed = "src_rest.transformers.transform_mos_rest:process_mos_rest_detailed"
+mos_rest_datamart = "src_rest.transformers.transform_mos_rest:mos_rest_datamart"
 
 [tool.pytest.ini_options]
 addopts = "--cov-report xml:coverage-reports/coverage.xml --cov-report=term-missing --cov=src_rest --cov-report=html"
