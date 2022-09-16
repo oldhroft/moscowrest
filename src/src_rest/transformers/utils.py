@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 STREET_PATTERNS = {
@@ -60,6 +60,7 @@ def load_process_json(
     basename = os.path.basename(path)
     return func(data, basename)
 
+
 from typing import Union
 from pandas import Series
 from numpy import ndarray, radians, sin, cos, arcsin, sqrt
@@ -83,3 +84,94 @@ def haversine_vectorize(
     dist = 2 * arcsin(sqrt(haver_formula))
     km = 6_367_000 * dist
     return km
+
+
+from pymorphy2 import MorphAnalyzer
+
+
+def normalize(sequence: list, morph: MorphAnalyzer) -> list:
+    return list(map(lambda x: morph.parse(x)[0].normal_form, sequence))
+
+
+from collections import Counter
+
+
+def search_words(seq: List[str], words: Union[set, list]) -> Dict[str, int]:
+    words = set(words)
+    cnt: Dict[str, int] = Counter()
+    for item in seq:
+        if item in words:
+            cnt[item] += 1
+    return dict(cnt)
+
+
+from joblib import Parallel, delayed
+
+PATTERN = "!|\"|\\#|\\$|%|\\&|'|\\(|\\)|\\*|\\+|,|\\-|\\.|/|:|;|<|=|>|\\?|@|\\[|\\\\|\\]|\\^|_|`|\\{|\\||\\}|\\~|—|«|»|\\d+"
+
+
+def preprocess_texts(texts: List[str], n_jobs: int = -1) -> List[str]:
+    morph = MorphAnalyzer()
+    pattern = re.compile(PATTERN)
+    texts_spl = list(map(lambda x: pattern.sub("", x).lower().split(), texts))
+    tasks = map(delayed(lambda x: normalize(x, morph)), texts_spl)
+    texts_n = Parallel(n_jobs=n_jobs)(tasks)
+    return list(map(" ".join, texts_n))
+
+
+from pandas import DataFrame
+
+DISHES = [
+    "пицца",
+    "паста",
+    "бургер",
+    "шаурма",
+    "пельмень",
+    "шашлык",
+    "вино",
+    "пиво",
+    "коктейль",
+    "суши",
+    "ролл",
+    "фастфуд",
+    "рыба",
+    "морепродукт",
+    "краб",
+    "креветка",
+    "лосось",
+    "салат",
+    "цезарь",
+    "стейк",
+    "курица",
+    "котлета",
+    "суп",
+    "гаспаччо",
+    "кебаб",
+    "тикка",
+    "масала",
+    "хотдог",
+    "гренка",
+]
+
+
+def find_dish_aspects(texts: List[List[str]], ids: list) -> DataFrame:
+
+    morph = MorphAnalyzer()
+    normalized_dishes = normalize(DISHES, morph)
+    n2d = dict(zip(normalized_dishes, DISHES))
+
+    items = map(lambda x: search_words(x, normalized_dishes), texts)
+
+    aspects = []
+    for global_id, item in zip(ids, items):
+        for aspect, cnt in item.items():
+            aspects.append(
+                {
+                    "global_id": global_id,
+                    "aspect": "dish",
+                    "value": n2d[aspect],
+                    "count": cnt,
+                }
+            )
+    aspects_df = DataFrame(aspects)
+    return aspects_df

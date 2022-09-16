@@ -245,7 +245,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 name = "dawg-python"
 version = "0.7.2"
 description = "Pure-python reader for DAWGs (DAFSAs) created by dawgdic C++ library or DAWG Python extension."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -277,7 +277,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 name = "docopt"
 version = "0.6.2"
 description = "Pythonic argument parser, that will make you smile"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -419,7 +419,7 @@ python-versions = "*"
 name = "intervaltree"
 version = "3.1.0"
 description = "Editable interval tree data structure for Python 2 and 3"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -454,7 +454,7 @@ test = ["flaky", "ipyparallel", "pre-commit", "pytest (>=6.0)", "pytest-cov", "p
 name = "ipymarkup"
 version = "0.9.0"
 description = "NER, syntax tree markup visualisations for Jupyter Notebook"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -761,7 +761,7 @@ python-versions = "*"
 name = "natasha"
 version = "1.4.0"
 description = "Named-entity recognition for russian language"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -777,7 +777,7 @@ yargy = ">=0.14.0"
 name = "navec"
 version = "0.10.0"
 description = "Compact high quality word embeddings for russian language"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1123,7 +1123,7 @@ plugins = ["importlib-metadata"]
 name = "pymorphy2"
 version = "0.9.1"
 description = "Morphological analyzer (POS tagger + inflection engine) for Russian language."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1139,7 +1139,7 @@ fast = ["DAWG (>=0.8)"]
 name = "pymorphy2-dicts-ru"
 version = "2.4.417127.4579844"
 description = "Russian dictionaries for pymorphy2"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1304,7 +1304,7 @@ test = ["pytest (>=3.0)", "pytest-asyncio"]
 name = "razdel"
 version = "0.5.0"
 description = "Splits russian text into tokens, sentences, section. Rule-based"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1395,7 +1395,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "slovnet"
 version = "0.5.0"
 description = "Deep-learning based NLP modeling for Russian language"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1470,7 +1470,7 @@ reports = ["jinja2", "pygments"]
 name = "sortedcontainers"
 version = "2.4.0"
 description = "Sorted Containers -- Sorted List, Sorted Dict, Sorted Set"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1667,7 +1667,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 name = "yargy"
 version = "0.15.0"
 description = "Rule-based facts extraction for Russian language"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1702,7 +1702,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<4"
-content-hash = "6f7143e04458f93be26a76c7167d2e585c86d796c9e9cc5bd10f952c0fe1be0c"
+content-hash = "168fe37c9ff7ccbc6193f6ed240f47c82ba487000ff5643729b0580a51efb5c2"
 
 [metadata.files]
 appdirs = [

@@ -5,7 +5,7 @@ import os
 from click.testing import CliRunner
 
 from src_rest.loaders.utils import safe_mkdir
-from src_rest.transformers.transform import concat_data
+from src_rest.transformers.transform import concat_data, preprocess_df_text
 
 
 class TestConcatData:
@@ -213,8 +213,12 @@ class TestTransformMosdata:
         assert df["PublicPhone"].apply(literal_eval)[0][1] == "2"
 
 
+from numpy import array
+
 from src_rest.transformers.utils import *
 from src_rest.scrapying.utils import dump_json
+
+from pymorphy2 import MorphAnalyzer
 
 
 class TestUtils:
@@ -309,6 +313,84 @@ class TestUtils:
         assert isinstance(data, dict)
         assert data["key"] == "v"
         assert data["some_other_key"] == "v"
+
+    def test_haversine_distance(self):
+        x1 = array([30.0])
+        y1 = array([30.0])
+
+        x2 = array([30.0])
+        y2 = array([30.0])
+
+        dist = haversine_vectorize(x1, y1, x2, y2)[0]
+        assert dist < 1e-5, "Distance between equal points should be 0"
+
+        y1 = array([55.73])
+        x1 = array([37.6])
+
+        x2 = array([47.5])
+        y2 = array([42.98])
+
+        dist = haversine_vectorize(x1, y1, x2, y2)[0]
+        assert dist < 1.6e6, "Distance between equal points should < 2e+6"
+        assert dist > 1.5e5, "Distance between equal points should be > 1.5e+6"
+
+    def test_normalize(self):
+        sample_seq = ["мама", "готовила", "рыбу"]
+        morph = MorphAnalyzer()
+        out_seq = normalize(sample_seq, morph)
+
+        assert len(out_seq) == 3
+        assert out_seq[0] == "мама"
+        assert out_seq[1] == "готовить"
+        assert out_seq[2] == "рыба"
+
+    def test_search_words(self):
+
+        seq = ["a", "b", "cd", "a", "cd"]
+        words = ["b", "cd"]
+
+        cnt = search_words(seq, words)
+        assert cnt["b"] == 1
+        assert cnt["cd"] == 2
+
+    def test_preprocess_texts(self):
+        texts = [
+            "Мама готовила рыбу 55555 раз",
+            "Люблю грозу! она прекрасна, и что? ??",
+        ]
+
+        texts_out = preprocess_texts(texts, n_jobs=-1)
+        assert len(texts_out) == 2
+        assert texts_out[0] == "мама готовить рыба раз"
+        assert texts_out[1] == "любить гроза она прекрасный и что"
+
+    def test_find_dish_aspects(self):
+        texts = [
+            "мама готовить рыба шашлык раз".split(),
+            "любить гроза она прекрасный и что и сушить".split(),
+        ]
+
+        ids = [0, 1]
+
+        aspects = find_dish_aspects(texts, ids)
+        assert len(aspects) == 3
+        aspects_unique = aspects.value.tolist()
+        assert "суши" in aspects_unique
+        assert "рыба" in aspects_unique
+        assert "шашлык" in aspects_unique
+
+    def test_preprocess_df_text(self):
+        texts = [
+            "Мама готовила рыбу 55555 раз",
+            "Люблю грозу! она прекрасна, и что? ??",
+        ]
+
+        data = DataFrame({"text": texts, "other_column": [0, 1]})
+
+        result = preprocess_df_text(data, col_text="text", n_jobs=-1)
+        assert result.shape == (2, 3)
+        assert result.text_norm.iloc[0] == "мама готовить рыба раз"
+        assert result.text_norm.iloc[1] == "любить гроза она прекрасный и что"
 
 
 from pandas import NA, read_csv, isna
@@ -579,12 +661,3 @@ class TestTranformMosRest:
         for key in details["data"]:
             assert key in result
         assert isinstance(result["aspect_stars"], str)
-
-
-class TestTransformMosRestDetails:
-    @pytest.fixture(autouse=True)
-    def init_data(self):
-        pass
-
-    def test_haversine_vectorized(self):
-        pass
