@@ -257,10 +257,8 @@ class MosRestScraper(BaseLinkScraper):
         if not isinstance(review, Tag):
             text = None
         else:
-            text_item = review.find("div", class_="data-text")
-            if not isinstance(text_item, Tag):
-                raise ValueError("text of review not found")
-            text = text_item.text.strip("\r\n\t ")
+            text_items = review.find_all("div", class_="data-text")
+            text = '\n'.join(map(lambda x: x.text.strip("\r\n\t "), text_items))
 
         return {
             "x_coord": x,

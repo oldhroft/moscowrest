@@ -287,7 +287,7 @@ def create_mos_rest_datamart(
 
     print("Selecting aspects")
     aspects = (
-        df_with_id.loc[df_with_id.aspect_stars.notna(), ["global_id", "aspect_stars"]]
+        df_with_id.loc[df_with_id.aspect_stars.notna(), ["global_id", "aspect_stars", "url"]]
         .reset_index(drop=True)
         .assign(aspect_stars=lambda x: x.aspect_stars.apply(json.loads))
     )
@@ -304,7 +304,7 @@ def create_mos_rest_datamart(
     )
 
     print("Selecting reviews")
-    reviews = df_with_id.loc[df_with_id.review.notna(), ["global_id", "review"]].assign(
+    reviews = df_with_id.loc[df_with_id.review.notna(), ["global_id", "review", "url"]].assign(
         source="https://www.moscow-restaurants.ru/"
     )
 
