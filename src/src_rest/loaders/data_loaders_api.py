@@ -47,3 +47,17 @@ def load_mosdata(
 
         if limit is not None and i + 1 == limit:
             break
+
+
+from pandas import read_csv
+
+
+@click.command()
+@click.option(
+    "--output", help="Output path to load data", type=click.STRING, required=1
+)
+def load_sentiment(output) -> None:
+    check_paths(input=None, output=output)
+    url = "https://raw.githubusercontent.com/sismetanin/rureviews/master/women-clothing-accessories.3-class.balanced.csv"
+    data = read_csv(url, delimiter="\t")
+    data.to_csv(output)

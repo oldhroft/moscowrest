@@ -110,6 +110,10 @@ from joblib import Parallel, delayed
 PATTERN = "!|\"|\\#|\\$|%|\\&|'|\\(|\\)|\\*|\\+|,|\\-|\\.|/|:|;|<|=|>|\\?|@|\\[|\\\\|\\]|\\^|_|`|\\{|\\||\\}|\\~|—|«|»|\\d+"
 
 
+def clear_texts(texts: Series):
+    return texts.str.lower().str.replace(PATTERN, "")
+
+
 def preprocess_texts(texts: List[str], n_jobs: int = -1) -> List[str]:
     morph = MorphAnalyzer()
     pattern = re.compile(PATTERN)

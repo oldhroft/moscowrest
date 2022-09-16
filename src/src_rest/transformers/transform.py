@@ -39,7 +39,7 @@ def concat_data(input: str, is_list: bool, output: str, format: str) -> None:
         DataFrame(data).to_csv(output, index=None)
 
 
-from src_rest.transformers.utils import find_dish_aspects, preprocess_texts
+from src_rest.transformers.utils import clear_texts, find_dish_aspects, preprocess_texts
 
 
 def preprocess_df_text(df: DataFrame, col_text: str, n_jobs: int) -> DataFrame:
@@ -59,9 +59,7 @@ def find_aspects(
     df1 = find_dish_aspects(texts, ids)
     aspects_df = concat([df1], axis=1, ignore_index=False)
 
-    aspects_df = aspects_df.merge(
-        df[[col_id, *global_features]], how="left", on=col_id
-    )
+    aspects_df = aspects_df.merge(df[[col_id, *global_features]], how="left", on=col_id)
 
     return aspects_df
 
@@ -111,3 +109,18 @@ def create_aspects(
     data = read_csv(input)
     df = find_aspects(data, col_text, col_id, global_features)
     df.to_csv(output, index=None)
+
+
+@click.command()
+@click.option("--input", help="input data folder", type=click.STRING, required=True)
+@click.option(
+    "--output", help="desitnation file to save data", required=True, type=click.STRING
+)
+def transform_sentiments(input: str, output: str):
+    check_paths(input, output)
+    data = read_csv(input)
+    data.sentiment = data.sentiment.replace(
+        {"negative": -1, "positive": 1, "neautral": 0}
+    )
+    data["review"] = clear_texts(data.review)
+    data.to_csv(output, index=None)
