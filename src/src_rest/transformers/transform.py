@@ -114,13 +114,26 @@ def create_aspects(
 @click.command()
 @click.option("--input", help="input data folder", type=click.STRING, required=True)
 @click.option(
-    "--output", help="desitnation file to save data", required=True, type=click.STRING
+    "--dataset", help="rureviews|senteval2016", type=click.STRING, required=True
 )
-def transform_sentiments(input: str, output: str):
+@click.option(
+    "--output", help="destination file to save data", required=True, type=click.STRING
+)
+def transform_sentiments(input: str, dataset: str, output: str):
+
+    if dataset not in ("rureviews", "senteval2016"):
+        raise ValueError("Unknown dataset!")
     check_paths(input, output)
     data = read_csv(input)
-    data.sentiment = data.sentiment.replace(
-        {"negative": -1, "positive": 1, "neautral": 0}
-    )
+    if dataset == "rureviews":
+        data.sentiment = data.sentiment.replace(
+            {"negative": -1, "positive": 1, "neautral": 0}
+        )
+    else:
+        data.sentiment = data.sentiment.replace({2: -1, 1: 1, 0: 0})
+
     data["review"] = clear_texts(data.review)
-    data.to_csv(output, index=None)
+    (
+        data.loc[data.review.notna() & (data.review.str.strip() != "")]
+        .reset_index(drop=True)
+        .to_csv(output, index=None))

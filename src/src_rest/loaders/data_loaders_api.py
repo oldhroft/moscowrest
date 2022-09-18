@@ -49,15 +49,24 @@ def load_mosdata(
             break
 
 
-from pandas import read_csv
+from pandas import read_csv, concat
 
 
 @click.command()
 @click.option(
-    "--output", help="Output path to load data", type=click.STRING, required=1
+    "--output", help="Output directory to load data", type=click.STRING, required=1
 )
 def load_sentiment(output) -> None:
-    check_paths(input=None, output=output)
+    check_paths(input=None, output=output, is_output_dir=True)
     url = "https://raw.githubusercontent.com/sismetanin/rureviews/master/women-clothing-accessories.3-class.balanced.csv"
     data = read_csv(url, delimiter="\t")
-    data.to_csv(output)
+    data.to_csv(os.path.join(output, "rureviews.csv"), index=None)
+    url_train = "https://raw.githubusercontent.com/comptechml/SentEvalRu/master/data/SST/dialog-2016/train.csv"
+    url_test = "https://raw.githubusercontent.com/comptechml/SentEvalRu/master/data/SST/dialog-2016/test.csv"
+    url_dev = "https://raw.githubusercontent.com/comptechml/SentEvalRu/master/data/SST/dialog-2016/dev.csv"
+    data1 = read_csv(url_train, delimiter="\t", header=None)
+    data2 = read_csv(url_test, delimiter="\t", header=None)
+    data3 = read_csv(url_dev, delimiter="\t", header=None)
+    data = concat([data1, data2, data3], ignore_index=True)
+    data.columns = ["review", "sentiment"]
+    data.to_csv(os.path.join(output, "senteval2016.csv"), index=None)

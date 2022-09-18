@@ -169,3 +169,5 @@ cython_debug/
 CHECKPOINT
 *.html
 *catboost_info*
+*.xlsx
+*.xls
