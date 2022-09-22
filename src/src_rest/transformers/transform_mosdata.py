@@ -41,20 +41,22 @@ from src_rest.transformers.utils import (
     BUIDING_PATTERNS,
 )
 
-TYPOS = {
-    'Eхtra Virgin': 'Extra virgin',
-    'ExtraVirgin': 'Extra virgin'
-}
+TYPOS = {"Eхtra Virgin": "Extra virgin", "ExtraVirgin": "Extra virgin"}
+
 
 def create_mosdata_datamart(df: DataFrame) -> DataFrame:
     df = df.copy()
 
     df["max_number"] = df.groupby("global_id").Number.transform("max")
 
-    df = df.loc[
-        (df.Number == df.max_number)
-        & (df.TypeObject.isin(["кафе", "бар", "ресторан"]))
-    ].reset_index(drop=True).drop('max_number', axis=1)
+    df = (
+        df.loc[
+            (df.Number == df.max_number)
+            & (df.TypeObject.isin(["кафе", "бар", "ресторан"]))
+        ]
+        .reset_index(drop=True)
+        .drop("max_number", axis=1)
+    )
 
     df.PublicPhone = df.PublicPhone.replace(["[]", "['нет телефона']"], NA)
 
@@ -95,8 +97,10 @@ def create_mosdata_datamart(df: DataFrame) -> DataFrame:
         .replace(TYPOS)
     )
 
-    df['OperatingCompany_count'] = df.groupby('OperatingCompany').Name.transform('count')
-    df['Name_norm_count'] = df.groupby('Name_norm').Name_norm.transform('count')
+    df["OperatingCompany_count"] = df.groupby("OperatingCompany").Name.transform(
+        "count"
+    )
+    df["Name_norm_count"] = df.groupby("Name_norm").Name_norm.transform("count")
 
     return df
 

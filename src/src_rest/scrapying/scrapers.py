@@ -258,7 +258,7 @@ class MosRestScraper(BaseLinkScraper):
             text = None
         else:
             text_items = review.find_all("div", class_="data-text")
-            text = '\n'.join(map(lambda x: x.text.strip("\r\n\t "), text_items))
+            text = "\n".join(map(lambda x: x.text.strip("\r\n\t "), text_items))
 
         return {
             "x_coord": x,
