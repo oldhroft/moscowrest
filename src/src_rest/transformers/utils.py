@@ -111,13 +111,12 @@ PATTERN = "!|\"|\\#|\\$|%|\\&|'|\\(|\\)|\\*|\\+|,|\\-|\\.|/|:|;|<|=|>|\\?|@|\\[|
 
 
 def clear_texts(texts: Series):
-    return texts.str.lower().str.replace(PATTERN, "")
-
+    return texts.str.lower().str.replace(PATTERN, "").str.split().apply(" ".join)
 
 def preprocess_texts(texts: List[str], n_jobs: int = -1) -> List[str]:
     morph = MorphAnalyzer()
     pattern = re.compile(PATTERN)
-    texts_spl = list(map(lambda x: pattern.sub("", x).lower().split(), texts))
+    texts_spl = list(map(str.split, texts))
     tasks = map(delayed(lambda x: normalize(x, morph)), texts_spl)
     texts_n = Parallel(n_jobs=n_jobs)(tasks)
     return list(map(" ".join, texts_n))
@@ -158,7 +157,7 @@ DISHES = [
 ]
 
 
-def find_dish_aspects(texts: List[List[str]], ids: list) -> DataFrame:
+def find_dish_aspects(texts: List[List[str]], ids: list, sentence_ids: list) -> DataFrame:
 
     morph = MorphAnalyzer()
     normalized_dishes = normalize(DISHES, morph)
@@ -167,11 +166,12 @@ def find_dish_aspects(texts: List[List[str]], ids: list) -> DataFrame:
     items = map(lambda x: search_words(x, normalized_dishes), texts)
 
     aspects = []
-    for global_id, item in zip(ids, items):
+    for global_id, sentence_id, item in zip(ids, sentence_ids, items):
         for aspect, cnt in item.items():
             aspects.append(
                 {
                     "global_id": global_id,
+                    "sentence_id": sentence_id,
                     "aspect": "dish",
                     "value": n2d[aspect],
                     "count": cnt,
@@ -179,3 +179,14 @@ def find_dish_aspects(texts: List[List[str]], ids: list) -> DataFrame:
             )
     aspects_df = DataFrame(aspects)
     return aspects_df
+
+
+def score_texts_dostoevsky(texts: List[str]) -> List[Dict[str, float]]:
+    from dostoevsky.tokenization import RegexTokenizer
+    from dostoevsky.models import FastTextSocialNetworkModel
+
+    tokenizer = RegexTokenizer()
+    model = FastTextSocialNetworkModel(tokenizer=tokenizer)
+
+    return model.predict(texts)
+

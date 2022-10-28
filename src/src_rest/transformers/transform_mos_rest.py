@@ -308,7 +308,18 @@ def create_mos_rest_datamart(
         source="https://www.moscow-restaurants.ru/"
     )
 
-    return df_main, aspects, reviews
+    print("Transforming reviews into sentences")
+
+    reviews_sentence = (
+        reviews.assign(review=lambda x: x.review.str.split('.'))
+        .explode("review")
+        .reset_index(drop=True)
+        .loc[lambda x: x.review.str.strip() != ""]
+    )
+
+    reviews_sentence["sentence_id"] = arange(len(reviews_sentence))
+
+    return df_main, aspects, reviews_sentence
 
 
 @click.command()

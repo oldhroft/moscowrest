@@ -214,6 +214,7 @@ class TestTransformMosdata:
 
 
 from numpy import array
+from pandas import Series
 
 from src_rest.transformers.utils import *
 from src_rest.scrapying.utils import dump_json
@@ -355,14 +356,27 @@ class TestUtils:
 
     def test_preprocess_texts(self):
         texts = [
-            "Мама готовила рыбу 55555 раз",
-            "Люблю грозу! она прекрасна, и что? ??",
+            "мама готовила рыбу раз",
+            "люблю грозу она прекрасна и что",
         ]
 
         texts_out = preprocess_texts(texts, n_jobs=-1)
         assert len(texts_out) == 2
         assert texts_out[0] == "мама готовить рыба раз"
         assert texts_out[1] == "любить гроза она прекрасный и что"
+
+    def test_clear_texts(self):
+        texts = Series(
+            [
+                "Мама готовила рыбу 55555 раз",
+                "Люблю грозу! она прекрасна, и что? ??",
+            ]
+        )
+        texts_out = clear_texts(texts)
+
+        assert len(texts_out) == 2
+        assert texts_out[0] == "мама готовила рыбу раз"
+        assert texts_out[1] == "люблю грозу она прекрасна и что"
 
     def test_find_dish_aspects(self):
         texts = [
@@ -388,9 +402,29 @@ class TestUtils:
         data = DataFrame({"text": texts, "other_column": [0, 1]})
 
         result = preprocess_df_text(data, col_text="text", n_jobs=-1)
-        assert result.shape == (2, 3)
+        assert result.shape == (2, 9)
         assert result.text_norm.iloc[0] == "мама готовить рыба раз"
         assert result.text_norm.iloc[1] == "любить гроза она прекрасный и что"
+        assert result.text_norm.iloc[0] == "мама готовить рыба раз"
+        assert "neutral" in result.columns
+
+    def test_score_texts_dostoevsky(self):
+
+        messages = [
+            "Сегодня хорошая погода",
+            "Я счастлив проводить с тобою время",
+            "Мне нравится эта музыкальная композиция",
+            "В больнице была ужасная очередь",
+            "Сосед с верхнего этажа мешает спать",
+            "Маленькая девочка потерялась в торговом центре",
+        ]
+
+        scores = score_texts_dostoevsky(messages)
+
+        assert len(scores) == len(messages)
+        assert "negative" in scores[0]
+        assert "positive" in scores[1]
+        assert "neutral" in scores[2]
 
 
 from pandas import NA, read_csv, isna
