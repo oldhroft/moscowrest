@@ -426,6 +426,23 @@ class TestUtils:
         assert "positive" in scores[1]
         assert "neutral" in scores[2]
 
+    def test_calculate_overall_sentiment(self):
+
+        data = DataFrame(
+            [
+                {
+                    "negative": 0,
+                    "positive": 0.95,
+                    "neutral": 0.6,
+                    "skip": 0,
+                    "speech": 0,
+                }
+            ]
+        )
+
+        data_sentiment = calculate_overall_sentiment(data)
+        assert data_sentiment.sentiment.iloc[-1] > 0
+
 
 from pandas import NA, read_csv, isna
 from src_rest.transformers.transform_mosdata import create_mosdata_datamart

@@ -40,6 +40,7 @@ def concat_data(input: str, is_list: bool, output: str, format: str) -> None:
 
 
 from src_rest.transformers.utils import (
+    calculate_overall_sentiment,
     clear_texts,
     find_dish_aspects,
     preprocess_texts,
@@ -121,7 +122,7 @@ def create_text_features(input: str, output: str, col_text: str, n_jobs: int) ->
 @click.option(
     "--global_features",
     help="Extra features to add",
-    default=["source", "url", "negative", "positive", "neutral"],
+    default=["source", "url", "negative", "positive", "neutral", "skip", "speech"],
     multiple=True,
 )
 def create_aspects(
@@ -165,3 +166,29 @@ def transform_sentiments(input: str, dataset: str, output: str):
         .reset_index(drop=True)
         .to_csv(output, index=None)
     )
+
+
+def aggregate_aspects(df_aspects: DataFrame) -> DataFrame:
+
+    df_aspects = calculate_overall_sentiment(df_aspects)
+
+    df_agg = df_aspects.groupby(["global_id", "aspect", "value"], as_index=False).agg(
+        {"sentiment": "mean", "count": "sum"}
+    )
+
+    return df_agg
+
+
+@click.command()
+@click.option(
+    "--input", help="Input aspects data path", required=True, type=click.STRING
+)
+@click.option(
+    "--output", help="Output aspects data path", required=True, type=click.STRING
+)
+def collect_aspects(input, output) -> None:
+    check_paths(input, output)
+    paths = glob.glob(os.path.join(input, "*.csv"))
+    data = concat(map(read_csv, paths), ignore_index=True)
+    data_agg = aggregate_aspects(data)
+    data_agg.to_csv(output, index=None)

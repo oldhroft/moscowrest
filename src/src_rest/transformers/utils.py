@@ -113,6 +113,7 @@ PATTERN = "!|\"|\\#|\\$|%|\\&|'|\\(|\\)|\\*|\\+|,|\\-|\\.|/|:|;|<|=|>|\\?|@|\\[|
 def clear_texts(texts: Series):
     return texts.str.lower().str.replace(PATTERN, "").str.split().apply(" ".join)
 
+
 def preprocess_texts(texts: List[str], n_jobs: int = -1) -> List[str]:
     morph = MorphAnalyzer()
     pattern = re.compile(PATTERN)
@@ -157,7 +158,9 @@ DISHES = [
 ]
 
 
-def find_dish_aspects(texts: List[List[str]], ids: list, sentence_ids: list) -> DataFrame:
+def find_dish_aspects(
+    texts: List[List[str]], ids: list, sentence_ids: list
+) -> DataFrame:
 
     morph = MorphAnalyzer()
     normalized_dishes = normalize(DISHES, morph)
@@ -190,3 +193,13 @@ def score_texts_dostoevsky(texts: List[str]) -> List[Dict[str, float]]:
 
     return model.predict(texts)
 
+
+from numpy import exp
+
+
+def calculate_overall_sentiment(df: DataFrame) -> DataFrame:
+    val = exp(df[["positive", "negative", "neutral", "skip", "speech"]].values)
+    softmax = val / val.sum(axis=1).reshape(-1, 1)
+    polar_scores = [1, -1, 0, 0, 0]
+    score = (softmax * polar_scores).sum(axis=1)
+    return df.assign(sentiment=score)
