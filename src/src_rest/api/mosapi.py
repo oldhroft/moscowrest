@@ -25,6 +25,7 @@ class MosApi:
             total=self.n_retries,
             backoff_factor=self.backoff,
             status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False,
         )
         session.mount("https://", HTTPAdapter(max_retries=retries))
         self.session = session

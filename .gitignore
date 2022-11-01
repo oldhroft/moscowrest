@@ -167,3 +167,8 @@ cython_debug/
 *.snakemake
 *trigger
 CHECKPOINT
+*.html
+*catboost_info*
+*.xlsx
+*.xls
+*.sav
