@@ -51,6 +51,7 @@ mos_rest_datamart = "src_rest.transformers.transform_mos_rest:mos_rest_datamart"
 create_text_features = "src_rest.transformers.transform:create_text_features"
 create_aspects = "src_rest.transformers.transform:create_aspects"
 collect_aspects = "src_rest.transformers.transform:collect_aspects"
+collect_named_aspects = "src_rest.transformers.transform:collect_named_aspects"
 transform_sentiments ="src_rest.transformers.transform:transform_sentiments"
 train_sentiment_model = "src_rest.models.models:train_sentiment_model"
 

@@ -443,6 +443,19 @@ class TestUtils:
         data_sentiment = calculate_overall_sentiment(data)
         assert data_sentiment.sentiment.iloc[-1] > 0
 
+    def test_boxcox_normalize(self):
+
+        data = array([1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 2.5])
+        data_normed = boxcox_normalize(data)
+        assert data_normed.shape == data.shape
+        assert isinstance(data_normed, ndarray)
+        assert abs(data_normed.mean()) < 0.05
+
+        series = Series(data)
+
+        series_normed = boxcox_normalize(series, add_one=True)
+        assert isinstance(series_normed, Series)
+
 
 from pandas import NA, read_csv, isna
 from src_rest.transformers.transform_mosdata import create_mosdata_datamart

@@ -53,6 +53,7 @@ from src_rest.transformers.utils import (
     find_dish_aspects,
     preprocess_texts,
     score_texts_dostoevsky,
+    boxcox_normalize,
 )
 
 
@@ -185,7 +186,7 @@ def transform_sentiments(input: str, dataset: str, output: str):
     )
 
 
-def aggregate_aspects(df_aspects: DataFrame) -> DataFrame:
+def aggregate_named_aspects(df_aspects: DataFrame) -> DataFrame:
 
     df_aspects = calculate_overall_sentiment(df_aspects)
 
@@ -196,6 +197,16 @@ def aggregate_aspects(df_aspects: DataFrame) -> DataFrame:
     return df_agg
 
 
+def aggregate_aspects(df_aspects: DataFrame) -> DataFrame:
+    df_agg = df_aspects.groupby(["global_id", "fname"], as_index=False).rating.mean()
+
+    df_agg["rating_boxcox_scaled"] = df_agg.groupby(["fname"]).rating.apply(
+        boxcox_normalize
+    )
+
+    return df_agg.groupby(["global_id"], as_index=False).rating.mean()
+
+
 @click.command()
 @click.option(
     "--input", help="Input aspects data path", required=True, type=click.STRING
@@ -203,13 +214,40 @@ def aggregate_aspects(df_aspects: DataFrame) -> DataFrame:
 @click.option(
     "--output", help="Output aspects data path", required=True, type=click.STRING
 )
-def collect_aspects(input, output) -> None:
+def collect_named_aspects(input: str, output: str) -> None:
     check_paths(input, output)
     paths = glob.glob(os.path.join(input, "*.csv"))
     logger.info("Reading data")
     data = concat(map(read_csv, paths), ignore_index=True)
     logger.info(f"Data shape, {data.shape}")
     logger.info("Aggregating aspects")
+    data_agg = aggregate_named_aspects(data)
+    logger.info(f"Aspects shape {data_agg.shape}, saving data")
+    data_agg.to_csv(output, index=None)
+
+
+@click.command()
+@click.option(
+    "--input", help="Input aspects data path", required=True, type=click.STRING
+)
+@click.option(
+    "--output", help="Output aspects data path", required=True, type=click.STRING
+)
+def collect_aspects(input: str, output: str) -> None:
+    check_paths(input, output)
+    paths = glob.glob(os.path.join(input, "*.csv"))
+    logger.info("Reading data")
+
+    def _read_csv(fname):
+        return read_csv(fname).assign(fname=fname)
+
+    data = concat(map(_read_csv, paths), ignore_index=True)
+    logger.info(f"Data shape, {data.shape}")
+    logger.info("Aggregating aspects")
     data_agg = aggregate_aspects(data)
     logger.info(f"Aspects shape {data_agg.shape}, saving data")
     data_agg.to_csv(output, index=None)
+
+
+def create_final_dataset(input: str, input_aspects: str, output: str) -> None:
+    ...

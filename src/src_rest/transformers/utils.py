@@ -202,4 +202,24 @@ def calculate_overall_sentiment(df: DataFrame) -> DataFrame:
     softmax = val / val.sum(axis=1).reshape(-1, 1)
     polar_scores = [1, -1, 0, 0, 0]
     score = (softmax * polar_scores).sum(axis=1)
+    score = boxcox_normalize(score, add_one=True)
     return df.assign(sentiment=score)
+
+
+from scipy.stats import boxcox
+from sklearn.preprocessing import scale
+
+
+def boxcox_normalize(
+    data: Union[Series, ndarray], add_one: bool = False
+) -> Union[Series, ndarray]:
+    if add_one:
+        bx, _ = boxcox(data + 1)
+    else:
+        bx, _ = boxcox(data)
+    bx_scaled = scale(bx)
+
+    if isinstance(data, Series):
+        return Series(bx_scaled, data.index, name=data.name)
+    else:
+        return bx_scaled
