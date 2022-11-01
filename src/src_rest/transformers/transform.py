@@ -249,5 +249,50 @@ def collect_aspects(input: str, output: str) -> None:
     data_agg.to_csv(output, index=None)
 
 
-def create_final_dataset(input: str, input_aspects: str, output: str) -> None:
-    ...
+def create_final_ds(
+    df_md: DataFrame, df_mr: DataFrame, df_rating: DataFrame
+) -> DataFrame:
+    mr_columns = ["url", "cuisine", "phone", "avg_check", "global_id", "opening_hours"]
+
+    md_columns = [
+        "global_id",
+        "Name",
+        "Address",
+        "SeatsCount",
+        "SocialPrivileges",
+        "x_coord",
+        "y_coord",
+    ]
+
+    df = df_md[md_columns].merge(df_mr[mr_columns], how="inner", on="global_id")
+    df = df.merge(df_rating, how="left", on="global_id")
+    df.rating = df.rating.fillna(0)
+
+    return df
+
+
+@click.command()
+@click.option(
+    "--input", help="Path to global dataset", required=True, type=click.STRING
+)
+@click.option(
+    "--input_mosrest",
+    help="Path to moscow-restoraunts dataset",
+    required=True,
+    type=click.STRING,
+)
+@click.option("--input_rating", help="Path to rating", required=True, type=click.STRING)
+@click.option(
+    "--output", help="Output aspects data path", required=True, type=click.STRING
+)
+def create_final_dataset(
+    input: str, input_mosrest: str, input_rating: str, output: str
+) -> None:
+    check_paths(input, output)
+    check_paths(input_rating, output)
+    check_paths(input_mosrest, output)
+    df_md = read_csv(input)
+    df_mr = read_csv(input_mosrest)
+    df_rating = read_csv(input_rating)
+    df = create_final_ds(df_md, df_mr, df_rating)
+    df.to_csv(output, index=False)

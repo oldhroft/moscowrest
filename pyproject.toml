@@ -54,6 +54,7 @@ collect_aspects = "src_rest.transformers.transform:collect_aspects"
 collect_named_aspects = "src_rest.transformers.transform:collect_named_aspects"
 transform_sentiments ="src_rest.transformers.transform:transform_sentiments"
 train_sentiment_model = "src_rest.models.models:train_sentiment_model"
+create_final_dataset = "src_rest.transformers.transform:create_final_dataset"
 
 [tool.pytest.ini_options]
 addopts = "--cov-report xml:coverage-reports/coverage.xml --cov-report=term-missing --cov=src_rest --cov-report=html"
