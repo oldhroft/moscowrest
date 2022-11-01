@@ -4,6 +4,14 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from typing import Optional, List, cast
 
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+
+logger = logging.getLogger()
+
 
 class ParsedItem(TypedDict):
     title: Optional[str]
@@ -127,7 +135,7 @@ def parse_data(data: dict, fname: str) -> List[ParsedData]:
 def parse_details(data: dict, fname: str) -> List[ParsedDetails]:
 
     if not data["ok"]:
-        print(f"Missed data {fname}, {data['url']}")
+        logger.warn(f"Missed data {fname}, {data['url']}")
         result: List[ParsedDetails] = []
         return result
 
@@ -235,21 +243,21 @@ def create_mos_rest_datamart(
 
     col_comp = ["global_id", "key", "x_coord", "y_coord", "Name_norm"]
     col_df = ["left_id", "key", "x_coord", "y_coord", "title_norm"]
-    print("Creating cartesian product")
+    logger.info("Creating cartesian product")
     data_product = df_comp[col_comp].merge(df[col_df], on="key")
-    print("Calculating distances")
+    logger.info("Calculating distances")
     data_product["distance"] = haversine_vectorize(
         data_product.x_coord_x,
         data_product.y_coord_x,
         data_product.x_coord_y,
         data_product.y_coord_y,
     )
-    print("Data product shape", data_product.shape[0])
+    logger.info("Data product shape", data_product.shape[0])
 
-    print("Finding rests in close proximity")
+    logger.info("Finding rests in close proximity")
     close_proximity = data_product.loc[lambda x: x.distance <= dist_threshold]
-    print("Close proximity number", close_proximity.shape[0])
-    print("Calculating close names")
+    logger.info("Close proximity number", close_proximity.shape[0])
+    logger.info("Calculating close names")
     match1 = close_proximity.apply(lambda x: x.Name_norm in x.title_norm, axis=1)
     match2 = close_proximity.apply(lambda x: x.title_norm in x.Name_norm, axis=1)
     mapping = (
@@ -258,9 +266,9 @@ def create_mos_rest_datamart(
         .loc[:, ["global_id", "left_id"]]
         .drop_duplicates(subset=["left_id"])
     )
-    print("Number of matched", mapping.shape[0])
+    logger.info(f"Number of matched {mapping.shape[0]}")
 
-    print("Finding relation between data and general data")
+    logger.info("Finding relation between data and general data")
     df_with_id = df.drop("key", axis=1).merge(mapping, how="inner", on="left_id")
 
     final_columns = [
@@ -282,12 +290,14 @@ def create_mos_rest_datamart(
         "global_id",
     ]
 
-    print("Selecting main result")
+    logger.info("Selecting main result")
     df_main = df_with_id[final_columns]
 
-    print("Selecting aspects")
+    logger.info("Selecting aspects")
     aspects = (
-        df_with_id.loc[df_with_id.aspect_stars.notna(), ["global_id", "aspect_stars", "url"]]
+        df_with_id.loc[
+            df_with_id.aspect_stars.notna(), ["global_id", "aspect_stars", "url"]
+        ]
         .reset_index(drop=True)
         .assign(aspect_stars=lambda x: x.aspect_stars.apply(json.loads))
     )
@@ -303,15 +313,15 @@ def create_mos_rest_datamart(
         .drop(["aspect_stars_full", "global_id_full"], axis=1)
     )
 
-    print("Selecting reviews")
-    reviews = df_with_id.loc[df_with_id.review.notna(), ["global_id", "review", "url"]].assign(
-        source="https://www.moscow-restaurants.ru/"
-    )
+    logger.info("Selecting reviews")
+    reviews = df_with_id.loc[
+        df_with_id.review.notna(), ["global_id", "review", "url"]
+    ].assign(source="https://www.moscow-restaurants.ru/")
 
-    print("Transforming reviews into sentences")
+    logger.info("Transforming reviews into sentences")
 
     reviews_sentence = (
-        reviews.assign(review=lambda x: x.review.str.split('.'))
+        reviews.assign(review=lambda x: x.review.str.split("."))
         .explode("review")
         .reset_index(drop=True)
         .loc[lambda x: x.review.str.strip() != ""]

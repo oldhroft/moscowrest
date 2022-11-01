@@ -15,12 +15,21 @@ from joblib import dump
 from src_rest.loaders.utils import check_paths
 
 
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+
+logger = logging.getLogger()
+
+
 def create_model() -> BaseEstimator:
     model = make_pipeline(
         TfidfVectorizer(max_df=0.3, min_df=5),
         TruncatedSVD(n_components=300, random_state=17),
         StandardScaler(),
-        LogisticRegression(random_state=17, n_jobs=-1, C=1, max_iter=500)
+        LogisticRegression(random_state=17, n_jobs=-1, C=1, max_iter=500),
     )
     return model
 
@@ -33,9 +42,9 @@ def train_sentiment_model(input: str, output: str) -> None:
     data = read_csv(input)
     X = data["review"]
     y = data["sentiment"]
-    print("Creating model")
+    logger.info("Creating model")
     model = create_model()
-    print("Fitting model")
+    logger.info("Fitting model")
     model.fit(X, y)
-    print("Dumping model")
+    logger.info("Dumping model")
     dump(model, os.path.join(output, "logreg_sentiment.sav"))

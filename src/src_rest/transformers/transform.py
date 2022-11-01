@@ -10,6 +10,14 @@ from pandas import DataFrame, concat, read_csv
 
 from src_rest.loaders.utils import check_paths
 
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+
+logger = logging.getLogger()
+
 
 @click.command()
 @click.option("--input", help="input data folder", type=click.STRING, required=True)
@@ -50,8 +58,11 @@ from src_rest.transformers.utils import (
 
 def preprocess_df_text(df: DataFrame, col_text: str, n_jobs: int) -> DataFrame:
     texts = df[col_text]
+    logger.info("Standartizing texts")
     texts_cleared = clear_texts(texts)
+    logger.info("Lemmatizing texts")
     texts_n = preprocess_texts(texts_cleared.tolist(), n_jobs=n_jobs)
+    logger.info("Scoring texts")
     sentiment = DataFrame(score_texts_dostoevsky(texts_cleared))
     df = df.join(sentiment)
     return df.assign(
@@ -94,8 +105,11 @@ def find_aspects(
 )
 def create_text_features(input: str, output: str, col_text: str, n_jobs: int) -> None:
     check_paths(input, output)
+    logger.info("Reading data")
     data = read_csv(input)
+    logger.info("Start text preprocessing")
     data = preprocess_df_text(data, col_text=col_text, n_jobs=n_jobs)
+    logger.info("Saving data")
     data.to_csv(output, index=None)
 
 
@@ -134,8 +148,11 @@ def create_aspects(
     global_features: List[str],
 ) -> None:
     check_paths(input, output)
+    logger.info("Reading data")
     data = read_csv(input)
+    logger.info("Creating aspects")
     df = find_aspects(data, col_text, col_sentence, col_id, global_features)
+    logger.info("Saving data")
     df.to_csv(output, index=None)
 
 
@@ -189,6 +206,10 @@ def aggregate_aspects(df_aspects: DataFrame) -> DataFrame:
 def collect_aspects(input, output) -> None:
     check_paths(input, output)
     paths = glob.glob(os.path.join(input, "*.csv"))
+    logger.info("Reading data")
     data = concat(map(read_csv, paths), ignore_index=True)
+    logger.info(f"Data shape, {data.shape}")
+    logger.info("Aggregating aspects")
     data_agg = aggregate_aspects(data)
+    logger.info(f"Aspects shape {data_agg.shape}, saving data")
     data_agg.to_csv(output, index=None)
