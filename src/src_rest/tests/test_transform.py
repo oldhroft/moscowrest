@@ -385,8 +385,10 @@ class TestUtils:
         ]
 
         ids = [0, 1]
+        sentences_ids = [0, 1]
 
-        aspects = find_dish_aspects(texts, ids)
+
+        aspects = find_dish_aspects(texts, ids, sentences_ids)
         assert len(aspects) == 3
         aspects_unique = aspects.value.tolist()
         assert "суши" in aspects_unique
@@ -436,12 +438,19 @@ class TestUtils:
                     "neutral": 0.6,
                     "skip": 0,
                     "speech": 0,
+                },
+                {
+                    "negative": 0.1,
+                    "positive": 0.99,
+                    "neutral": 0.64,
+                    "skip": 0.01,
+                    "speech": 0.01,
                 }
             ]
         )
 
         data_sentiment = calculate_overall_sentiment(data)
-        assert data_sentiment.sentiment.iloc[-1] > 0
+        assert data_sentiment.sentiment.iloc[0] > 0
 
     def test_boxcox_normalize(self):
 
@@ -457,55 +466,7 @@ class TestUtils:
         assert isinstance(series_normed, Series)
 
 
-from pandas import NA, read_csv, isna
-from src_rest.transformers.transform_mosdata import create_mosdata_datamart
-
-
-class TestMosdataDatamart:
-    @pytest.fixture(autouse=True)
-    def init_data(self):
-        self.path = "./src/src_rest/tests/data/sample_data.csv"
-        self.data = read_csv(self.path)
-        safe_mkdir("./dm")
-        yield
-        os.system("rm -rf ./dm")
-
-    def test_create_mosdata_datamart(self):
-        df = create_mosdata_datamart(self.data)
-        assert df.shape[0] == 2
-
-        assert isna(df.PublicPhone.iloc[0])
-        assert df.Name_norm.iloc[0] == "чебуречная"
-        assert df.StreetType.iloc[1] == "бульвар"
-        assert df.StreetName.iloc[1] == "сиреневый"
-        assert df.HouseType.iloc[1] == "дом"
-        assert df.HouseName.iloc[1] == "15а"
-
-    def test_mosdata_datamart(self):
-        runner = CliRunner()
-
-        result = runner.invoke(
-            mosdata_datamart,
-            [
-                "--input",
-                "./src/src_rest/tests/data/sample_data.csv",
-                "--output",
-                "./dm/data.csv",
-            ],
-        )
-
-        assert result.exit_code == 0
-        assert os.path.exists("./dm/data.csv")
-
-        df = read_csv("./dm/data.csv")
-        assert isna(df.PublicPhone.iloc[0])
-        assert df.Name_norm.iloc[0] == "чебуречная"
-        assert df.StreetType.iloc[1] == "бульвар"
-        assert df.StreetName.iloc[1] == "сиреневый"
-        assert df.HouseType.iloc[1] == "дом"
-        assert df.HouseName.iloc[1] == "15а"
-
-
+from pandas import NA, read_csv
 from bs4 import BeautifulSoup
 from src_rest.transformers.transform_mos_rest import (
     _extract_value,

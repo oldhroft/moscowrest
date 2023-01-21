@@ -29,8 +29,9 @@ import json
 from src_rest.api.mosapi import MosApi
 
 TEST_CONF_API = {
-    'n_retries': 1,
+    "n_retries": 1,
 }
+
 
 class TestMosApi:
     @pytest.fixture(autouse=True)
@@ -80,9 +81,8 @@ class TestMosApi:
 from typing import Union, Dict, Any
 from src_rest.api.mosapi import MosDataset
 
-TEST_CONF_DATASET = {
-    'sleep': 0
-}
+TEST_CONF_DATASET = {"sleep": 0}
+
 
 class MosApiMocker:
     def __init__(
@@ -100,39 +100,39 @@ class MosApiMocker:
     ) -> Union[list, dict]:
         if object_id not in self.data:
             raise ValueError("Text: Page not found")
-        return self.data[object_id][skip: skip + top]
+        return self.data[object_id][skip : skip + top]
 
     def count(self, object_type: str, object_id: Union[str, int]) -> int:
         if object_id not in self.data:
             raise ValueError("Text: Page not found")
         return len(self.data[object_id])
 
-class TestMosDataset:
 
+class TestMosDataset:
     @pytest.fixture(autouse=True)
     def init_data(self):
-        self.api = MosApiMocker('123')
+        self.api = MosApiMocker("123")
 
     def test_no_object(self):
-        ds = MosDataset(self.api, '34', **TEST_CONF_DATASET)
+        ds = MosDataset(self.api, "34", **TEST_CONF_DATASET)
         items = []
         with pytest.raises(ValueError):
             for item in ds.load():
                 items.extend(item)
 
     def test_load_data(self):
-        ds = MosDataset(self.api, '0', **TEST_CONF_DATASET)
+        ds = MosDataset(self.api, "0", **TEST_CONF_DATASET)
         data = []
         for item in ds.load():
             data.extend(item)
-        
-        assert len(data) == len(self.api.data['0'])
+
+        assert len(data) == len(self.api.data["0"])
         assert str(data) == str(self.api.data["0"])
 
-        ds = MosDataset(self.api, '1', **TEST_CONF_DATASET)
+        ds = MosDataset(self.api, "1", **TEST_CONF_DATASET)
         data = []
         for item in ds.load():
             data.extend(item)
-        
-        assert len(data) == len(self.api.data['1'])
+
+        assert len(data) == len(self.api.data["1"])
         assert str(data) == str(self.api.data["1"])

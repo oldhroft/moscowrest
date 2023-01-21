@@ -21,6 +21,7 @@ joblib = "^1.1.0"
 pybind11 = "^2.10.3"
 fasttext = {git = "https://github.com/cfculhane/fastText"}
 dostoevsky = "^0.6.0"
+pymorphy2 = "^0.9.1"
 
 [tool.poetry.dev-dependencies]
 jupyter = "^1.0.0"

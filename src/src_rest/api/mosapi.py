@@ -11,7 +11,10 @@ class MosApi:
     """`Mos api instance"""
 
     def __init__(
-        self, api_key: str, n_retries: int = 10, backoff: int = 1,
+        self,
+        api_key: str,
+        n_retries: int = 10,
+        backoff: int = 1,
     ) -> None:
         api_string = f"&api_key={api_key}"
         object_string = "https://apidata.mos.ru/v1/{object_type}/{object_id}"
@@ -64,13 +67,17 @@ class MosApi:
         text = self.get_response_text(response)
         return int(text)
 
+
 import time
 
-class MosDataset:
 
+class MosDataset:
     def __init__(
-        self, api: MosApi, dataset_id: Union[str, int], step: int = 1000,
-        sleep: int=3,
+        self,
+        api: MosApi,
+        dataset_id: Union[str, int],
+        step: int = 1000,
+        sleep: int = 3,
     ) -> None:
 
         self.api = api
@@ -97,4 +104,3 @@ class MosDataset:
             if len(result) < self.step:
                 break
             i += 1
-            

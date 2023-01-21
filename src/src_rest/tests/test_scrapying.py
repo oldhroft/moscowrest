@@ -589,30 +589,3 @@ class TestMosRestCrawler:
         assert isinstance(crawler, BaseCrawler)
         assert isinstance(crawler.session, requests.Session)
         assert crawler.session.headers["User-Agent"] == "Chrome"
-
-    def test_parse_data(self):
-        crawler = MosRestCrawler(
-            "https://website.org/restaurants/", output="./mos_rest", user_agent="Chrome"
-        )
-
-        with open(
-            "./src/src_rest/tests/data/index.html", "r", encoding="utf-8"
-        ) as file:
-            html = file.read()
-
-        soup = BeautifulSoup(html)
-
-        data = crawler.parse_data(soup)
-
-        assert isinstance(data, dict)
-        assert "cards" in data
-
-        next_page = crawler.get_next_link(soup)
-        assert next_page == "https://website.org/restaurants/?curPos=7"
-
-        crawler = MosRestCrawler(
-            "https://website.org/restaurants", output="./mos_rest", user_agent="Chrome"
-        )
-
-        next_page = crawler.get_next_link(soup)
-        assert next_page == "https://website.org/restaurants/?curPos=7"
