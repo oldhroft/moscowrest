@@ -234,15 +234,15 @@ class TestUtils:
         string = "Улица пушкина, дом колотушкина, корпус пичужкина"
         items = string.lower().split(",")
 
-        street_info = extract_patterns(items, STREET_PATTERNS)
+        street_info = extract_first_pattern(items, STREET_PATTERNS)
         assert street_info["Type"] == "улица"
         assert street_info["Name"] == "пушкина"
 
-        house_info = extract_patterns(items, HOUSE_PATTERNS)
+        house_info = extract_first_pattern(items, HOUSE_PATTERNS)
         assert house_info["Type"] == "дом"
         assert house_info["Name"] == "колотушкина"
 
-        building_type = extract_patterns(items, BUIDING_PATTERNS)
+        building_type = extract_first_pattern(items, BUIDING_PATTERNS)
         assert building_type["Type"] == "корпус"
         assert building_type["Name"] == "пичужкина"
 
@@ -250,15 +250,15 @@ class TestUtils:
         string = "переулок пушкина, стр пичужкина"
         items = string.lower().split(",")
 
-        street_info = extract_patterns(items, STREET_PATTERNS)
+        street_info = extract_first_pattern(items, STREET_PATTERNS)
         assert street_info["Type"] == "переулок"
         assert street_info["Name"] == "пушкина"
 
-        house_info = extract_patterns(items, HOUSE_PATTERNS)
+        house_info = extract_first_pattern(items, HOUSE_PATTERNS)
         assert house_info["Type"] is None
         assert house_info["Name"] is None
 
-        building_type = extract_patterns(items, BUIDING_PATTERNS)
+        building_type = extract_first_pattern(items, BUIDING_PATTERNS)
         assert building_type["Type"] == "строение"
         assert building_type["Name"] == "пичужкина"
 
@@ -266,15 +266,15 @@ class TestUtils:
         string = "караул пушкина, выпад 7, атас пичужкина"
         items = string.lower().split(",")
 
-        street_info = extract_patterns(items, STREET_PATTERNS)
+        street_info = extract_first_pattern(items, STREET_PATTERNS)
         assert street_info["Type"] is None
         assert street_info["Name"] is None
 
-        house_info = extract_patterns(items, HOUSE_PATTERNS)
+        house_info = extract_first_pattern(items, HOUSE_PATTERNS)
         assert house_info["Type"] is None
         assert house_info["Name"] is None
 
-        building_type = extract_patterns(items, BUIDING_PATTERNS)
+        building_type = extract_first_pattern(items, BUIDING_PATTERNS)
         assert building_type["Type"] is None
         assert building_type["Name"] is None
 
@@ -282,15 +282,15 @@ class TestUtils:
         string = "ул пушкина, д 7, с пичужкина"
         items = string.lower().split(",")
 
-        street_info = extract_patterns(items, STREET_PATTERNS)
+        street_info = extract_first_pattern(items, STREET_PATTERNS)
         assert street_info["Type"] == "улица"
         assert street_info["Name"] == "пушкина"
 
-        house_info = extract_patterns(items, HOUSE_PATTERNS)
+        house_info = extract_first_pattern(items, HOUSE_PATTERNS)
         assert house_info["Type"] == "дом"
         assert house_info["Name"] == "7"
 
-        building_type = extract_patterns(items, BUIDING_PATTERNS)
+        building_type = extract_first_pattern(items, BUIDING_PATTERNS)
         assert building_type["Type"] == "строение"
         assert building_type["Name"] == "пичужкина"
 

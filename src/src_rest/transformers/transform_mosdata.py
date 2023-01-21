@@ -35,7 +35,7 @@ def process_mosdata(input: str, output: str) -> None:
 import re
 
 from src_rest.transformers.utils import (
-    extract_patterns,
+    extract_first_pattern,
     STREET_PATTERNS,
     HOUSE_PATTERNS,
     BUIDING_PATTERNS,
@@ -65,19 +65,19 @@ def create_mosdata_datamart(df: DataFrame) -> DataFrame:
     # emtpy df -> something weird
 
     street_info = (
-        items.apply(extract_patterns, patterns=STREET_PATTERNS)
+        items.apply(extract_first_pattern, patterns=STREET_PATTERNS)
         .apply(Series)
         .replace([None], NA)
     )
 
     house_info = (
-        items.apply(extract_patterns, patterns=HOUSE_PATTERNS)
+        items.apply(extract_first_pattern, patterns=HOUSE_PATTERNS)
         .apply(Series)
         .replace([None], NA)
     )
 
     building_info = (
-        items.apply(extract_patterns, patterns=BUIDING_PATTERNS)
+        items.apply(extract_first_pattern, patterns=BUIDING_PATTERNS)
         .apply(Series)
         .replace([None], NA)
     )

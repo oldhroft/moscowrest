@@ -38,8 +38,34 @@ BUIDING_PATTERNS = {
 }
 
 
-def extract_patterns(items: list, patterns: Dict[str, str]) -> Dict[str, Any]:
-    for item in items:
+def extract_first_pattern(words: List[str], patterns: Dict[str, str]) -> Dict[str, Any]:
+    """Extract first occuring pattern from a list of strings
+    Parameters
+    ----------
+    words: List[str]
+        List of string to search in
+    patterns: Dict[str, str]
+        Dict of re-patterns to look for
+        key - a re-pattern to look for
+        value - the type of the pattern
+    
+    Returns
+    -------
+    match_result: Dict[str, Any]
+
+    Notes
+    -----
+    For instance, patterns dict may look like 
+    {
+        "(?:улица|(?<!\w)ул\.|(?<!\w)ул)\s+(.+)": "улица",
+    }
+
+    where "(?:улица|(?<!\w)ул\.|(?<!\w)ул)\s+(.+)" is re-exptression
+    "улица" is a type of the pattern
+
+
+    """
+    for item in words:
         for key, value in patterns.items():
 
             match = re.search(key, item, flags=re.DOTALL)
@@ -56,6 +82,20 @@ from src_rest.scrapying.utils import load_json
 def load_process_json(
     path: str, func: Callable[[Union[dict, list], str], Union[dict, list]]
 ) -> Union[dict, list]:
+    """Loads JSON and immediately processes it with a given function
+    Parameters
+    ----------
+    path: str
+        path to JSON-file
+    func: Callable[[Union[dict, list], str], Union[dict, list]]
+        function that processes JSON-like object
+    
+    Returns
+    -------
+    result: Union[dict, list]
+        Result of a function with given JSON
+
+    """
     data = load_json(path)
     basename = os.path.basename(path)
     return func(data, basename)
@@ -70,7 +110,25 @@ ARRAY_TYPE = Union[ndarray, Series]
 
 def haversine_vectorize(
     lon1: ARRAY_TYPE, lat1: ARRAY_TYPE, lon2: ARRAY_TYPE, lat2: ARRAY_TYPE
-):
+) -> ARRAY_TYPE:
+    """Function to compute paired haversine distance between two sets of pounts
+
+    Parameters
+    ----------
+    lon1: Union[ndarray, Series]
+        longitudes of a first set of points
+    lat1: Union[ndarray, Series]
+        latitudes of a first set of points
+    lon2: Union[ndarray, Series]
+        longitudes of a second set of points
+    lat2: Union[ndarray, Series]
+        latitudes of a second set of points
+    
+    Returns
+    -------
+    dist: nion[ndarray, Series]
+        Paired distances between points
+    """
 
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
 
