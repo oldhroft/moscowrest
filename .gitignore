@@ -172,3 +172,5 @@ CHECKPOINT
 *.xlsx
 *.xls
 *.sav
+
+.python-version
