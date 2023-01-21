@@ -5,7 +5,7 @@ description = "Moscow restoraunts"
 authors = ["Ismail Gadzhiev <ismailgadzhievff@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4"
+python = "3.8.10"
 black = "^22.6.0"
 mypy = "^0.971"
 pandas = "^1.4.3"
@@ -18,14 +18,15 @@ pytest-cov = "^3.0.0"
 snakemake = "^7.13.0"
 beautifulsoup4 = "^4.11.1"
 joblib = "^1.1.0"
-natasha = "^1.4.0"
+pybind11 = "^2.10.3"
+fasttext = {git = "https://github.com/cfculhane/fastText"}
 dostoevsky = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 jupyter = "^1.0.0"
 matplotlib = "^3.5.3"
-natasha = "^1.4.0"
 types-beautifulsoup4 = "^4.11.5"
+scipy = "1.10.0"
 scikit-learn = "^1.1.2"
 catboost = "^1.0.6"
 openpyxl = "^3.0.10"
